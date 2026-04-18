@@ -1,0 +1,96 @@
+# ======================================================================
+#  Base Menu — extended with a Games entry (example)
+#
+#  This is the default base.menu with one modification: the "stinky"
+#  slot has been replaced with a "Games" entry that navigates to
+#  games.menu. Use this as an example of how to wire stim games into
+#  an existing menu.
+#
+#  To activate this menu set in /config.txt:
+#      start_menu = base_with_games.menu
+#
+#  Layout (4 × 2):
+#
+#  +----------+----------+----------+----------+
+#  | Thirsty  | Hungry   |   More   | Bathroom |
+#  |    1     |    2     |    3     |    4     |
+#  +----------+----------+----------+----------+
+#  |  Games   |   Yes    |    No    |  Please  |
+#  |    5     |    6     |    7     |    8     |
+#  +----------+----------+----------+----------+
+# ======================================================================
+
+[menu]
+name = Base Menu
+text_description = Basic needs
+type = grid
+columns = 4
+rows = 2
+background = /needs_small.bmp
+
+# ----- Top Row -----
+
+[thirsty]
+label = Thirsty
+text_description = I am thirsty
+image = images/thirsty.bmp
+sound = /button_sounds/thirsty.mp3
+position = 1
+
+[hungry]
+label = Hungry
+text_description = I am hungry
+image = images/hungry.bmp
+sound = /button_sounds/hungry.mp3
+position = 2
+
+[more]
+label = More
+text_description = Food and drink
+image = images/more.bmp
+submenu = food.menu
+position = 3
+
+[bathroom]
+label = Bathroom
+text_description = I need the bathroom
+image = images/bathroom.bmp
+sound = /button_sounds/bathroom.mp3
+position = 4
+
+# ----- Bottom Row -----
+
+# This slot used to hold "stinky" — reassigned to a Games launcher
+# to demonstrate the subprogram + .menu bridge. The submenu points
+# at games.menu, which in turn launches stim_games/*.py subprograms.
+[games]
+label = Games
+text_description = Stim games
+image = images/games/games_icon.bmp
+submenu = games.menu
+position = 5
+
+[yes]
+label = Yes
+text_description = Yes
+image = images/yes.bmp
+sound = /button_sounds/yes.mp3
+vibrate = short
+light = green
+position = 6
+
+[no]
+label = No
+text_description = No
+image = images/no.bmp
+sound = /button_sounds/no.mp3
+vibrate = short
+light = red
+position = 7
+
+[please]
+label = Please
+text_description = Please
+image = images/please.bmp
+sound = /button_sounds/please.mp3
+position = 8

@@ -1,0 +1,110 @@
+# ======================================================================
+#  Trainer Menu — Answer pool for the AAC Trainer / Chicken Challenge
+#
+#  This is the menu the AAC Trainer navigates while the player is
+#  answering questions. It intentionally mirrors the flattened set of
+#  basic-needs + common food items used by the trainer config.
+#
+#  You can point the trainer at any other menu by setting
+#     answer_menu = your.menu
+#  in aac_trainer.cfg — the answer ids in the config must match
+#  the [bracket] ids in whatever menu you choose.
+# ======================================================================
+
+[menu]
+name = Trainer Pool
+text_description = Trainer choices
+type = grid
+columns = 4
+rows = 3
+background = /needs_small.bmp
+
+# ----- Basic needs -----
+
+[thirsty]
+label = Thirsty
+text_description = I am thirsty
+image = images/thirsty.bmp
+sound = /button_sounds/thirsty.mp3
+position = 1
+
+[hungry]
+label = Hungry
+text_description = I am hungry
+image = images/hungry.bmp
+sound = /button_sounds/hungry.mp3
+position = 2
+
+[bathroom]
+label = Bathroom
+text_description = I need the bathroom
+image = images/bathroom.bmp
+sound = /button_sounds/bathroom.mp3
+position = 3
+
+[stinky]
+label = Stinky
+text_description = That is stinky
+image = images/stinky.bmp
+sound = /button_sounds/stinky.mp3
+position = 4
+
+# ----- Yes / no / politeness -----
+
+[yes]
+label = Yes
+text_description = Yes
+image = images/yes.bmp
+sound = /button_sounds/yes.mp3
+position = 5
+
+[no]
+label = No
+text_description = No
+image = images/no.bmp
+sound = /button_sounds/no.mp3
+position = 6
+
+[please]
+label = Please
+text_description = Please
+image = images/please.bmp
+sound = /button_sounds/please.mp3
+position = 7
+
+[more]
+label = More
+text_description = I want more
+image = images/more.bmp
+sound = /button_sounds/more.mp3
+position = 8
+
+# ----- Food & drink -----
+
+[water]
+label = Water
+text_description = I want water
+image = images/food/water.bmp
+sound = sounds/food/water.mp3
+position = 9
+
+[juice]
+label = Juice
+text_description = I want juice
+image = images/food/juice.bmp
+sound = sounds/food/juice.mp3
+position = 10
+
+[milk]
+label = Milk
+text_description = I want milk
+image = images/food/milk.bmp
+sound = sounds/food/milk.mp3
+position = 11
+
+[cracker]
+label = Cracker
+text_description = I want a cracker
+image = images/food/cracker.bmp
+sound = sounds/food/cracker.mp3
+position = 12

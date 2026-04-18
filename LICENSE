@@ -1,0 +1,56 @@
+SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
+T-Rex Talker Interactive — PolyForm Noncommercial License 1.0.0
+
+========================================================================
+IMPORTANT — THIS FILE IS A PLACEHOLDER
+========================================================================
+
+This repository is licensed under the PolyForm Noncommercial License
+1.0.0 exactly as published by the PolyForm Project.
+
+The verbatim text of that license MUST be dropped into this file
+before the repository is published. It is a stable, well-known
+standard form — do NOT paraphrase or modify it. Pull the canonical
+copy from any of the official sources below and paste it here,
+replacing this entire file:
+
+  * Canonical (PolyForm Project):
+        https://polyformproject.org/licenses/noncommercial/1.0.0/
+
+  * Canonical source repo (Markdown):
+        https://github.com/polyformproject/polyform-licenses/blob/1.0.0/PolyForm-Noncommercial-1.0.0.md
+
+  * SPDX registry (definitive identifier):
+        https://spdx.org/licenses/PolyForm-Noncommercial-1.0.0.html
+
+A helper script is provided to do the replacement automatically:
+
+  * Windows PowerShell:    .\tools\fetch_license.ps1
+  * macOS / Linux (bash):  ./tools/fetch_license.sh
+
+========================================================================
+License summary — NOT A SUBSTITUTE FOR THE FULL TEXT
+========================================================================
+
+The full license text, once pasted in above, governs. This summary is
+informational only and has no legal effect.
+
+- You may use, modify, and distribute the software in this repository
+  for any noncommercial purpose.
+
+- "Noncommercial" means personal research, experimentation, study,
+  hobbyist or amateur use, religious observance, or use by a
+  charitable, educational, governmental, public-research, public-
+  safety/health, or environmental-protection organization — in each
+  case regardless of funding source or funder-imposed obligations.
+
+- Distribution and changes/new works must carry these license terms
+  along with the software.
+
+- The software is provided "as-is" with no warranty and no liability.
+
+See the canonical text for the full terms. When in doubt about whether
+a use is noncommercial, read the "Noncommercial Purposes", "Personal
+Uses", and "Noncommercial Organizations" sections of the canonical
+license text.

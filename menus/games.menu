@@ -1,0 +1,80 @@
+# ======================================================================
+#  Games Menu — stim games and interactive subprograms
+#
+#  This menu demonstrates the subprogram launch syntax added in the
+#  Subprogram subsystem: the `submenu =` key accepts either a .menu
+#  file (navigate to another menu) or a .py file (launch a Python
+#  subprogram under /stim_games/).
+#
+#  See T-Rex_Talker_Subprogram.md for the full spec.
+#
+#  Layout (4 × 2):
+#
+#  +-----------+-----------+-----------+-----------+
+#  |  Cause &  |   Bubble  |   Color   |    AAC    |
+#  |   Effect  |    Pop    |   Cycle   |  Trainer  |
+#  |     1     |     2     |     3     |     4     |
+#  +-----------+-----------+-----------+-----------+
+#  |           |           |           |  ← Back   |
+#  |     5     |     6     |     7     |     8     |
+#  +-----------+-----------+-----------+-----------+
+# ======================================================================
+
+[menu]
+name = Games
+text_description = Stim games
+type = grid
+columns = 4
+rows = 2
+back = base.menu
+
+# ----- Row 1: games -----
+
+[cause_and_effect]
+label = Cause & Effect
+text_description = Press for reward
+image = images/games/cause_effect.bmp
+submenu = stim_games/cause_and_effect.py
+position = 1
+
+[bubble_pop]
+label = Bubble Pop
+text_description = Pop the bubbles
+image = images/games/bubble_pop.bmp
+submenu = stim_games/bubble_pop.py
+position = 2
+
+[color_cycle]
+label = Color Cycle
+text_description = Animated colours
+image = images/games/color_cycle.bmp
+submenu = stim_games/color_cycle.py
+position = 3
+
+[aac_trainer]
+label = AAC Trainer
+text_description = Chicken Challenge
+image = images/games/aac_trainer.bmp
+submenu = stim_games/aac_trainer.py
+position = 4
+
+# ----- Row 2: spacers + back button -----
+
+[spacer_5]
+label =
+position = 5
+
+[spacer_6]
+label =
+position = 6
+
+[spacer_7]
+label =
+position = 7
+
+[back_button]
+label = Back
+text_description = Back to home
+image = images/back.bmp
+position = 8
+back =
