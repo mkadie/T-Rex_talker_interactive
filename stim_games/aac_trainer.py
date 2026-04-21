@@ -1,29 +1,46 @@
 """AAC Trainer — the "Chicken Challenge" game.
 
-Runs on top of the base AAC software. The game loads a menu of
-AAC items (by default the current start_menu), plays an audio
-prompt, and asks the player to navigate to and select the correct
-AAC category. Ten questions form a round; score is total time with
-a 30-second penalty per wrong answer.
+Runs on top of the base AAC software. The game loads a menu of AAC
+items (by default the current start_menu), plays an audio prompt,
+and asks the player to navigate to and select the correct AAC item.
+Ten questions form a round; score is total time with a 30-second
+penalty per wrong answer.
 
 See:
   Version3/SipAndPuff/T-Rex_Sip_N_Puff.md §3 "Maker Faire Engagement:
   The Chicken Challenge Game".
 
+Answer paths
+------------
+An answer in the config can be a single item id (e.g. `bathroom`) or
+a slash-separated path that navigates through submenus
+(e.g. `more/banana`). For a path answer, the game enters each submenu
+when the player selects the matching item; the final step must match
+a leaf item to count as correct.
+
+Press evaluation during a path:
+
+  * Correct next step  -> navigate into that step (load its submenu if
+                          it has one, or finalize if this was the last
+                          step in the path).
+  * Back button        -> walk one level up the navigation stack;
+                          rolls the path cursor back by one if we were
+                          mid-path.
+  * Anything else      -> the round is marked wrong immediately.
+
 Input modes
 -----------
-The game supports three input sources simultaneously — whichever is
-first to emit an event wins:
+The game supports three input sources simultaneously:
 
 1. Rotary encoder (normal AAC behaviour):
      rotate  -> advance / retreat highlight
      press   -> select
 
 2. Single button / Sip-N-Puff puff (emulated rotary+click):
-     tap           -> advance +1
-     hold          -> continuous advance at an accelerating rate
-     double-tap    -> select current
-     long-press >= exit_hold_sec  -> exit trainer
+     tap                         -> advance +1
+     hold                        -> continuous advance at an accelerating rate
+     double-tap                  -> select current
+     long-press >= exit_hold_sec -> exit trainer
 
 3. Sip-N-Puff sip (optional, if the device differentiates):
      sip tap    -> advance -1
@@ -36,10 +53,22 @@ selected AAC item's own sound) is also spoken.
 Sidecar config (stim_games/aac_trainer.cfg) — see that file for
 the concrete shape. Each [question] section has:
     prompt = path/to/question.mp3
-    answer = <menu_item_id>         # must match an id in the menu file
+    answer = <menu_item_id>          # leaf id in the answer_menu, OR
+    answer = more/banana             # slash-separated path through submenus
+
+Extra knobs:
+    randomize       = true          # shuffle question order each round (default: true)
+    answer_menu     = base.menu     # top-level menu to train against
+    rounds          = 10
+    penalty_seconds = 30
 """
 
 import time
+
+try:
+    import random
+except ImportError:  # CircuitPython has `random` but keep the guard
+    random = None
 
 from stim_games.subprogram import Subprogram
 
@@ -52,6 +81,7 @@ DEFAULT_DOUBLE_TAP_SEC = 0.45
 DEFAULT_HOLD_FIRST_MS = 450    # delay before hold-repeat begins
 DEFAULT_HOLD_MIN_MS = 60       # fastest repeat rate while held
 DEFAULT_HOLD_DECAY = 0.85      # multiplier per step toward HOLD_MIN_MS
+DEFAULT_RANDOMIZE = True       # shuffle the question order each round
 
 
 class AacTrainer(Subprogram):
@@ -71,6 +101,7 @@ class AacTrainer(Subprogram):
         self._hold_first_ms = int(hdr.get("hold_first_ms", DEFAULT_HOLD_FIRST_MS))
         self._hold_min_ms = int(hdr.get("hold_min_ms", DEFAULT_HOLD_MIN_MS))
         self._hold_decay = float(hdr.get("hold_decay", DEFAULT_HOLD_DECAY))
+        self._randomize = bool(hdr.get("randomize", DEFAULT_RANDOMIZE))
 
         self._intro_sound = hdr.get("intro_sound",
                                     "/sounds/trainer/welcome.mp3")
@@ -87,20 +118,17 @@ class AacTrainer(Subprogram):
             self._done = True
             return
 
-        # 2. Load the answer menu ----------------------------------------
+        # Clamp round_count to questions available (if not randomizing
+        # and we have fewer questions than rounds, we'd otherwise crash)
+        if self._round_count > len(self._questions):
+            self._round_count = len(self._questions)
+
+        if self._randomize and random is not None:
+            random.shuffle(self._questions)
+
+        # 2. Resolve the answer-menu root --------------------------------
         self._answer_menu_file = hdr.get("answer_menu",
                                          self.machine._start_menu)
-        from menu_parser import parse_menu_file
-        menus_dir = getattr(self.machine, "_menus_dir", "/menus")
-        menu_path = menus_dir + "/" + self._answer_menu_file
-        if self.storage:
-            menu_path = self.storage.resolve_path(menu_path)
-        print("AAC Trainer: loading answer menu:", menu_path)
-        _header, items = parse_menu_file(menu_path)
-        self._items = items
-        self._id_to_index = {
-            str(it.get("id", "")): i for i, it in enumerate(items)
-        }
 
         # 3. Scorekeeping state ------------------------------------------
         self._score_sec = 0.0
@@ -117,10 +145,17 @@ class AacTrainer(Subprogram):
             double_tap_sec=self._double_tap,
             exit_hold_sec=self._exit_hold,
         )
-        self._sel_index = 0
         self._encoder_last = self._encoder_pos()
+        self._prev_enc_click = False
 
-        # 5. Play intro then the first question ---------------------------
+        # Navigation stack — top is the currently-loaded menu file name
+        self._nav_stack = []
+        self._items = []
+        self._sel_index = 0
+        self._current_path = []
+        self._path_pos = 0
+
+        # 5. Play intro, then first question ------------------------------
         self.set_status((0, 128, 255))
         self._say(self._intro_sound)
         self._run_start = time.monotonic()
@@ -150,7 +185,6 @@ class AacTrainer(Subprogram):
             return False
 
         # --- Encoder click = select --------------------------------------
-        # Detect a rising edge on encoder_button_held (if available)
         if self._encoder_click_edge():
             self._commit_selection()
 
@@ -164,13 +198,24 @@ class AacTrainer(Subprogram):
                   "(wrong: {})".format(total, self._wrong_count))
             self._say(self._done_sound)
 
-    # ----- question/answer flow ----------------------------------------
+    # ----- question / answer flow --------------------------------------
 
     def _ask(self, idx):
         q = self._questions[idx]
         prompt = q.get("prompt")
-        print("AAC Trainer: Q{}/{} prompt={} answer={}".format(
-            idx + 1, self._round_count, prompt, q.get("answer")))
+        raw_answer = str(q.get("answer", ""))
+        self._current_path = [
+            p for p in raw_answer.replace("\\", "/").split("/") if p
+        ]
+        self._path_pos = 0
+
+        print("AAC Trainer: Q{}/{} prompt={} path={}".format(
+            idx + 1, self._round_count, prompt, self._current_path))
+
+        # Reset the player to the top of the answer menu for every Q
+        self._nav_stack = []
+        self._load_menu(self._answer_menu_file)
+
         if prompt:
             self._say(prompt)
 
@@ -181,16 +226,48 @@ class AacTrainer(Subprogram):
             return
 
         selected = self._items[self._sel_index]
-        expected = str(self._questions[self._round_index].get("answer", ""))
-        print("AAC Trainer: selected {} (expected {})".format(
-            selected.get("id"), expected))
+        selected_id = str(selected.get("id", ""))
 
-        # Speak whichever sound is attached to the chosen AAC item first.
+        # "Back" navigates up a level without penalty or advancing rounds
+        if "back" in selected:
+            self._navigate_back()
+            # If we just stepped back out of a path-matched submenu,
+            # roll the path cursor back so the player can re-attempt.
+            if self._path_pos > 0:
+                self._path_pos -= 1
+            return
+
+        expected = (self._current_path[self._path_pos]
+                    if self._path_pos < len(self._current_path) else None)
+        print("AAC Trainer: selected {} (expected {} at step {}/{})".format(
+            selected_id, expected, self._path_pos + 1,
+            len(self._current_path)))
+
+        if expected and selected_id == expected:
+            self._path_pos += 1
+            if self._path_pos >= len(self._current_path):
+                # Final step — evaluate as correct
+                self._finalize_answer(selected, correct=True)
+            else:
+                # Intermediate step — enter the submenu
+                submenu = selected.get("submenu")
+                if submenu and not str(submenu).endswith(".py"):
+                    self._load_menu(str(submenu))
+                else:
+                    # Config says more steps but the item has no submenu
+                    # to dive into. Treat as wrong.
+                    print("AAC Trainer: path expects submenu but item "
+                          "'{}' has none".format(selected_id))
+                    self._finalize_answer(selected, correct=False)
+        else:
+            self._finalize_answer(selected, correct=False)
+
+    def _finalize_answer(self, selected, correct):
+        # Speak whatever sound is attached to the chosen AAC item first.
         item_sound = selected.get("sound")
         if item_sound:
             self._say(self._resolve(item_sound))
 
-        correct = str(selected.get("id", "")) == expected
         if correct:
             self.set_status((0, 255, 0))
             self._say(self._correct_sound)
@@ -215,6 +292,38 @@ class AacTrainer(Subprogram):
         except Exception:  # noqa: BLE001
             pass
 
+    # ----- menu navigation --------------------------------------------
+
+    def _load_menu(self, menu_file):
+        """Load a .menu file, push it onto the nav stack, render."""
+        from menu_parser import parse_menu_file
+        menus_dir = getattr(self.machine, "_menus_dir", "/menus")
+        menu_path = menus_dir + "/" + menu_file
+        if self.storage:
+            menu_path = self.storage.resolve_path(menu_path)
+        print("AAC Trainer: load menu:", menu_path)
+        try:
+            _header, items = parse_menu_file(menu_path)
+        except Exception as e:  # noqa: BLE001
+            print("AAC Trainer: cannot load", menu_path, ":", e)
+            items = []
+        self._items = items
+        self._sel_index = 0
+        self._nav_stack.append(menu_file)
+        try:
+            self.display.set_highlight(0)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _navigate_back(self):
+        """Pop one level off the nav stack, reload the parent menu."""
+        if len(self._nav_stack) <= 1:
+            # Already at the answer-menu root — nowhere to go back to.
+            return
+        self._nav_stack.pop()              # drop current
+        prev = self._nav_stack.pop()       # pop parent so _load_menu re-pushes
+        self._load_menu(prev)
+
     # ----- input plumbing ----------------------------------------------
 
     def _encoder_pos(self):
@@ -228,14 +337,14 @@ class AacTrainer(Subprogram):
 
     def _encoder_click_edge(self):
         held = getattr(self.input, "encoder_button_held", False)
-        prev = getattr(self, "_prev_enc_click", False)
+        prev = self._prev_enc_click
         self._prev_enc_click = bool(held)
         return bool(held) and not prev
 
     # ----- audio --------------------------------------------------------
 
     def _say(self, path):
-        """Play a sound file and pause the round timer while it plays."""
+        """Play a sound and pause the round timer while it plays."""
         if not path:
             return
         speak_start = time.monotonic()
@@ -243,14 +352,10 @@ class AacTrainer(Subprogram):
             self.audio.play(self._resolve(path))
         except Exception as e:  # noqa: BLE001
             print("AAC Trainer: sound error:", e)
-        # Compensate the timer for speech duration — cheap version:
-        # we already measure round time from _run_start, so subtract
-        # the speaking time by inflating _run_start.
         dur = time.monotonic() - speak_start
         self._run_start += dur
 
     def _resolve(self, path):
-        """Route relative paths through the storage manager like Action does."""
         if not path:
             return path
         if not path.startswith("/"):
@@ -280,8 +385,8 @@ class AacTrainer(Subprogram):
 class _SingleButtonHelper:
     """Decode a single momentary input into tap / double-tap / hold events.
 
-    Uses InputManager's raw digital pin reads when available. Falls back
-    to treating any poll() press as a tap.
+    Uses InputManager's raw digital pin reads when available. Falls
+    back to treating any poll() press as a tap.
     """
 
     def __init__(self, input_manager, first_delay_ms=450, min_interval_ms=60,
@@ -301,12 +406,12 @@ class _SingleButtonHelper:
         self._next_repeat = 0
 
     def _raw_pressed(self):
-        """Best-effort read of a "single button" or puff pin.
+        """Best-effort read of a single-button or puff pin.
 
-        Order of preference:
-            input_manager.puff_pressed        (Sip-N-Puff driver)
+        Preference order:
+            input_manager.puff_pressed         (Sip-N-Puff driver)
             input_manager.single_button_pressed
-            input_manager.encoder_button_held (fallback)
+            input_manager.encoder_button_held  (fallback)
         """
         for name in ("puff_pressed", "single_button_pressed",
                      "encoder_button_held"):
@@ -321,13 +426,10 @@ class _SingleButtonHelper:
 
         # --- Edge: released -----------------------------------------
         if not pressed and self._prev_pressed:
-            dur = now - self._press_started
             self._prev_pressed = False
             if self._hold_fired_any:
-                # Hold was active; no terminal tap/select on release
                 self._hold_fired_any = False
                 return None
-            # Short press — decide tap vs. double-tap
             if now - self._last_tap_time <= self.double_tap:
                 self._last_tap_time = 0
                 return "select"
@@ -346,13 +448,11 @@ class _SingleButtonHelper:
         if pressed and self._prev_pressed:
             held_for = now - self._press_started
             if held_for >= self.exit_hold:
-                # Exit gesture takes priority
                 self._prev_pressed = False
                 self._hold_fired_any = False
                 return "exit"
             if now >= self._next_repeat:
                 self._hold_fired_any = True
-                # Accelerate
                 self._current_interval = max(
                     self.min_interval,
                     self._current_interval * self.decay,

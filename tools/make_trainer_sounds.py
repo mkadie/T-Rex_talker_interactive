@@ -37,9 +37,16 @@ Output layout (matches aac_trainer.cfg defaults):
     out/sounds/trainer/do_you_want_ice_cream.mp3
     out/sounds/trainer/do_you_want_broccoli.mp3
     out/sounds/trainer/you_want_a_sweet_drink.mp3
-    out/sounds/trainer/you_want_something_cold_and_white.mp3
-    out/sounds/trainer/you_finished_your_snack.mp3
-    out/sounds/trainer/someone_helped_you.mp3
+    out/sounds/trainer/someone_held_the_door.mp3
+    out/sounds/trainer/bad_smell_making_me_angry.mp3
+    out/sounds/trainer/i_need_to_number_one.mp3
+    out/sounds/trainer/want_to_go_to_the_park.mp3
+    out/sounds/trainer/want_to_eat_broccoli.mp3
+    out/sounds/trainer/im_thirsty_want_water.mp3
+    out/sounds/trainer/want_a_crunchy_red_apple.mp3
+    out/sounds/trainer/want_a_cold_glass_of_milk.mp3
+    out/sounds/trainer/want_a_banana_only_a_banana.mp3
+    out/sounds/trainer/a_little_hungry_just_a_cracker.mp3
 """
 
 import argparse
@@ -49,37 +56,45 @@ import sys
 
 
 # ---- The corpus --------------------------------------------------------
-
+#
+# Prompts below are keyed for the DEFAULT rotary-encoder menus:
+#     base_fruitjam.menu  ->  thankyou, stinky, more, bathroom, yes, no
+#         more -> food_fruitjam.menu -> water, apple, milk, banana, cracker
+#
+# Five direct answers + five food items reached via "more" = 10 rounds.
 # Keep this list in sync with aac_trainer.cfg.
+
 PROMPTS = [
-    # Framing prompts
+    # --- Framing prompts ---
     ("welcome.mp3",
      "Welcome to the AAC Trainer. Squeeze the chicken to begin."),
-    ("correct.mp3",        "Yes, that's right!"),
-    ("try_again.mp3",      "Not quite — try again."),
-    ("finished.mp3",       "Great job! You finished the round."),
+    ("correct.mp3",   "Yes, that's right!"),
+    ("try_again.mp3", "Not quite — try again."),
+    ("finished.mp3",  "Great job! You finished the round."),
 
-    # Question prompts (must match aac_trainer.cfg [question] entries)
-    ("you_are_thirsty.mp3",
-     "You have been outside and you are thirsty. What do you want?"),
-    ("you_are_hungry.mp3",
-     "Your tummy is rumbling. What do you want to say?"),
-    ("you_drank_too_much_soda.mp3",
-     "You drank too much soda. What do you need?"),
-    ("the_dog_made_a_mess.mp3",
-     "The dog made a mess. How do you feel about it?"),
-    ("do_you_want_ice_cream.mp3",
-     "Dad asked if you want ice cream for dessert. What do you say?"),
-    ("do_you_want_broccoli.mp3",
-     "Mom asked if you want to eat broccoli. What do you say?"),
-    ("you_want_a_sweet_drink.mp3",
-     "You want a sweet drink. What do you ask for?"),
-    ("you_want_something_cold_and_white.mp3",
-     "You want something cold and white to drink. What is it?"),
-    ("you_finished_your_snack.mp3",
-     "You finished your snack and want another. What do you say?"),
-    ("someone_helped_you.mp3",
-     "Someone helped you. What should you say back?"),
+    # --- 5 direct answers from base_fruitjam.menu ---
+    ("someone_held_the_door.mp3",
+     "Someone just held the door open for you. What do you want to say?"),
+    ("bad_smell_making_me_angry.mp3",
+     "There is a bad smell making me angry."),
+    ("i_need_to_number_one.mp3",
+     "I need to go number one."),
+    ("want_to_go_to_the_park.mp3",
+     "Your friend asked if you want to go to the park. You want to say?"),
+    ("want_to_eat_broccoli.mp3",
+     "Mom asked if you want to eat broccoli for dessert. You want to say?"),
+
+    # --- 5 food answers, reached via the "more" button ---
+    ("im_thirsty_want_water.mp3",
+     "I'm thirsty and I want a glass of water."),
+    ("want_a_crunchy_red_apple.mp3",
+     "I want to eat a crunchy red apple."),
+    ("want_a_cold_glass_of_milk.mp3",
+     "I want a cold glass of milk."),
+    ("want_a_banana_only_a_banana.mp3",
+     "I am hungry and I want a banana, and only a banana."),
+    ("a_little_hungry_just_a_cracker.mp3",
+     "I am a little hungry; I just want a cracker."),
 ]
 
 
