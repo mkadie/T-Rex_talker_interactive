@@ -67,7 +67,7 @@ import sys
 PROMPTS = [
     # --- Framing prompts ---
     ("welcome.mp3",
-     "Welcome to the AAC Trainer. Squeeze the chicken to begin."),
+     "Welcome to the Communication Game. Press the button to begin."),
     ("correct.mp3",   "Yes, that's right!"),
     ("try_again.mp3", "Not quite — try again."),
     ("finished.mp3",  "Great job! You finished the round."),
@@ -101,12 +101,23 @@ PROMPTS = [
 # ---- Backends ----------------------------------------------------------
 
 def _say_gtts(text, wav_path):
-    from gtts import gTTS  # noqa: F401  # type: ignore
+    from gtts import gTTS as _gTTS  # type: ignore
     # gTTS writes MP3 directly, skipping the WAV intermediate.
     mp3_path = wav_path.replace(".wav", ".mp3")
-    from gtts import gTTS as _gTTS  # type: ignore
     tts = _gTTS(text=text, lang="en")
-    tts.save(mp3_path)
+    tmp_path = mp3_path + ".tmp"
+    tts.save(tmp_path)
+    # Resample to 22050 Hz at 90% volume for CircuitPython codec compatibility
+    subprocess.run([
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-i", tmp_path,
+        "-af", "volume=0.8",
+        "-ar", "22050",
+        "-codec:a", "libmp3lame",
+        "-qscale:a", "4",
+        mp3_path,
+    ], check=True)
+    os.remove(tmp_path)
     return mp3_path
 
 
@@ -132,6 +143,8 @@ def _wav_to_mp3(wav_path):
     cmd = [
         "ffmpeg", "-y", "-loglevel", "error",
         "-i", wav_path,
+        "-af", "volume=0.8",
+        "-ar", "22050",
         "-codec:a", "libmp3lame",
         "-qscale:a", "4",
         mp3_path,
