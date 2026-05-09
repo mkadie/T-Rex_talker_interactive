@@ -83,6 +83,33 @@ fruit_jam_hstx/
 
 `src/hstx_fb/` keeps its own `LICENSE.txt` (GPL-2) so the vendored Doom code's terms are clearly preserved without polluting the rest of the project.
 
+### Attribution requirements (applies to every vendored file)
+
+Every file copied or adapted from another project must carry attribution. This is a hard rule, not a "best effort":
+
+1. **In each source file's header comment**, include:
+   - Original project name
+   - Upstream URL (GitHub repo / specific file path on the default branch)
+   - Original copyright + license identifier (SPDX, e.g. `SPDX-License-Identifier: GPL-2.0-only`)
+   - Note any modifications we made
+
+   Example header for `src/hstx_fb/Framebuffer_RP2350.cpp`:
+   ```cpp
+   // Vendored from: https://github.com/adafruit/fruitjam-doom
+   //   blob: adafruit-fruitjam/Framebuffer_RP2350.c
+   // Original copyright: (c) 2024 Adafruit / contributors
+   // SPDX-License-Identifier: GPL-2.0-only
+   //
+   // Modifications in this copy:
+   //   - 2026-05-09: ported from .c -> .cpp for Arduino sketch use
+   //   - 2026-05-09: added DEMO_MODE_TRIPLED_320 path with explicit
+   //                 horizontal pillarbox at output_scaling=3
+   ```
+2. **In `fruit_jam_hstx/README.md`** under a "Third-party code" / "Attributions" section, list every vendored library with the same fields plus a one-line description of what we use it for.
+3. **In each LittleFS-shipped asset that's derived from a third-party source** (e.g. the Moana icons), the README also notes the source.
+
+If a phase-N commit adds vendored code without these comments, that's a defect — fix it in the same phase before moving on.
+
 PlatformIO over Arduino IDE: command-line build, reproducible env, cleaner library version pinning. Board: `adafruit_fruitjam`, framework: `arduino`, platform: `https://github.com/maxgerhardt/platform-raspberrypi.git` (earlephilhower core).
 
 **Filesystem strategy: LittleFS first, SD fallback.**
@@ -142,6 +169,7 @@ Sounds (WAV, 12 languages × 8 words) reusable as-is from `out/button_sounds/lan
 | Arduino-side text rendering for the bottom band English label | Adafruit_GFX is fine for Latin; for Thai/Chinese/etc. we keep the **pre-rendered banner BMPs** as in the CP demo |
 | Build environment fragility (Arduino-pico version pinning) | Capture exact versions in `platformio.ini`; commit a `.tool-versions` |
 | LittleFS partition collision with sketch flash | Pick the partition layout in `platformio.ini` early (P0); document it in README |
+| Forgetting attribution on vendored code | Per-phase checklist item: any new vendored file must have the header in §3.x AND a `README.md` Attributions row in the same commit |
 | SD-not-present at boot | `fs.cpp` falls back gracefully; non-flash languages just show "sound missing" without crashing |
 | Bricking risk during P0 firmware flash | None — RP2350 has BOOTSEL; worst case re-flash CircuitPython UF2 |
 
