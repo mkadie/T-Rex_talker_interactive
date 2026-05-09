@@ -62,6 +62,44 @@ If a flash leaves the device unenumerable:
 A backup of the CIRCUITPY contents (without `lib/`) lives on the host at
 `~/claude/coder/FruitJam/circuitpy_backup_2026-05-09/` for additional safety.
 
+## 2026-05-10 follow-up
+
+Tried three more host-side / build-side fixes. None landed working USB:
+
+| # | Change | Symbol-diff observation | Hardware result |
+|---|---|---|---|
+| F1 | `const`-ify all 6 `vblank_line*` / `vactive_line*` static arrays so they live in `.rodata` (flash) instead of `.data` (RAM) — addresses hypothesis #2. | RAM dropped 208 bytes (10308 → 10100), confirming the arrays moved to flash. | USB still fails to enumerate. |
+| F2 | Drop `__not_in_flash_func()` decoration on `dma_irq_handler` — addresses hypothesis #1. | No section attribute now, function lives in regular flash `.text`. | USB still fails (combined with F1). |
+| F3 | Strip the explicit `clock_configure(clk_hstx, …)` and `frequency_count_khz(…)` from `construct()`. They were the symbols at the top of the failing-vs-working diff. | `__clock_get_hz_veneer` etc. still pulled in transitively (probably via TinyUSB's own clock setup); `clock_configure_internal` / `clock_configure_undivided` still linked. | USB still fails. |
+
+### Symbol diff — what actually shifted
+
+Comparing two builds: **working** (`construct` DCE'd via no main reference) vs **failing** (construct reachable, never called).
+
+- Both builds contain USB-host hardware endpoint functions (`hw_endpoint_init`, `hw_endpoint_alloc.isra.0`, `hw_endpoint_xfer_start`) and an array of veneers including `__e15_is_bulkin_ep_veneer`, `__hw_endpoint_start_next_buffer_veneer`, `__mutex_enter_timeout_ms_veneer`, `____aeabi_idivmod_veneer`, etc.
+- Some veneers in the working build live at RAM addresses (e.g. `20001431 t __clock_get_hz_veneer`, `20001441 t __gpio_set_function_veneer`) — the Pico SDK's pattern of placing helper veneers next to RAM-resident `__not_in_flash_func` targets.
+- In the failing build, the veneer addresses shift; they're still in valid flash regions but layout is different.
+
+Neither set of veneers is obviously "broken." The earlier hypothesis ("trampolines pointing to garbage") wasn't borne out by the diff.
+
+### Working theory now
+
+USB CDC enumeration on arduino-pico's TinyUSB is sensitive to **something** that changes when the picodvi `construct()` body is added to the binary, even if `construct()` is never called. Plausible (untested) explanations:
+
+- **Reset / boot-time hardware state**: the .c file's static arrays' initial values include HSTX command bytes. They're in `.rodata` now, so no flash→RAM copy. But the SDK may have another init path that touches HSTX registers based on linked symbol presence. If HSTX peripheral gets partially configured at boot, the GPIO HSTX function multiplex might claim pins that arduino-pico expected for something else.
+- **Linker section overlay**: even though the `.elf` parses fine, the PicoTool UF2 packaging might split the binary into blocks differently when extra sections are present, and the `signed` UF2 generation could pad or align differently.
+- **RAM bank selection**: RP2350 has multiple SRAM banks; if our static `picodvi` data lands in a bank TinyUSB also uses for endpoint buffers, both writes could clobber each other.
+
+None of these were testable host-side without considerably more digging.
+
+### Recommendation for next session
+
+Rather than continue debugging the picodvi vendor blind:
+
+1. **Switch reference driver to `Adafruit-DVI-HSTX`** (the Adafruit Arduino library). Coexistence with TinyUSB device + host is documented in Adafruit's `Fruit_Jam_Factory_Test.ino`. Resolution ceiling is 720×400, lower than picodvi's targets, but USB-host integration is known-good. Land at 320×240 ×2 → 720×400 raster (with vertical letterbox); we lose pixel tripling for true 720p but gain a working baseline.
+2. Once Adafruit_dvhstx works end-to-end (display + USB host + audio), revisit picodvi vendoring with a known-good comparison point. Knowing the correct Pico SDK + arduino-pico interaction lets us spot what the picodvi vendor is doing differently.
+3. Keep the picodvi vendor commits in the repo (they're useful study material) but mark `fruit_jam_hstx/` itself as "blocked, see arduino_720p_P1_DEBUG.md" until the path is unblocked.
+
 ## Where the work is committed
 
 - `0d9d6dc` — P0 toolchain skeleton + heartbeat sketch (works on hardware).
