@@ -10,6 +10,14 @@ Layout (320x240 framebuffer -> 640x480 HDMI):
     +--------------------------------------------------+
 
 Inputs:
+Audio:
+  - TLV320DAC3100 with hardware headset-detect on the 3.5 mm jack. The
+    main loop polls dac.headset_status every 500 ms and flips
+    p.audio_output between "speaker" and "headphone" to follow the jack.
+    Switches only happen between sounds (audio.playing == False) so a
+    route change can't glitch in-progress playback.
+
+Inputs:
   - Numeric keys / keypad 1..8 -> activate cell 1..8
   - BUTTON1 / BUTTON2 / BUTTON3 -> activate cell 1 / 2 / 3
   - F1                  -> show 5 s help screen (lists all 12 languages)
@@ -62,12 +70,56 @@ print("DVI ready: %dx%d fb -> 640x480 hdmi (grid %dx%d, band %dx%d)" % (
 
 # --- Audio ---------------------------------------------------------------
 p = Peripherals()
-p.audio_output = "speaker"
 p.dac.dac_volume = -10
 p.dac.speaker_volume = 0
 p.dac.speaker_gain = 24
 audio = p.audio
-print("DAC ready")
+
+# Headset (3.5 mm jack) auto-routing: enable the TLV320DAC3100's hardware
+# detection and poll once a second. When the status changes, swap
+# p.audio_output between "speaker" and "headphone" — but only while audio
+# is idle, so a route change can't glitch ongoing playback.
+HP_POLL_SEC = 0.5
+try:
+    # detect_debounce=4 -> 256 ms — long enough to ignore plug bounce
+    p.dac.set_headset_detect(True, detect_debounce=4, button_debounce=2)
+    # Wait briefly for the first valid detection cycle before sampling.
+    time.sleep(0.5)
+    print("headset detect enabled, initial status =", p.dac.headset_status)
+except Exception as e:
+    print("headset detect init err:", type(e).__name__, e)
+
+# --- Auto-route polarity calibration --------------------------------------
+# The TLV320DAC3100 driver reports headset_status as 0/1/3 = none/headphone/
+# headset+mic. On the Fruit Jam, the jack's NC switch can invert this: an
+# empty jack reports "1" because the switch is closed. We learn the polarity
+# at boot — whatever the steady idle value is, that means "no plug inserted".
+try:
+    time.sleep(0.2)   # let detect logic settle past the wake transient
+    HP_IDLE_STATUS = p.dac.headset_status
+except Exception:
+    HP_IDLE_STATUS = 0
+print("hp idle status (= speaker):", HP_IDLE_STATUS)
+
+
+HP_DEBOUNCE_SEC = 1.0       # require this much steady state before swapping
+
+
+def _wanted_route_from(status):
+    """Return 'speaker' if status reads as the idle baseline OR 0 (no
+    headset per driver), else 'headphone'."""
+    if status == 0 or status == HP_IDLE_STATUS:
+        return "speaker"
+    return "headphone"
+
+
+audio_route = _wanted_route_from(HP_IDLE_STATUS)
+p.audio_output = audio_route
+print("audio route:", audio_route)
+last_hp_poll = 0.0
+last_hp_status = HP_IDLE_STATUS
+hp_pending_status = HP_IDLE_STATUS    # candidate value waiting for debounce
+hp_pending_since = 0.0
 
 
 # --- Cell + language data -------------------------------------------------
@@ -470,8 +522,40 @@ while True:
     t = time.monotonic()
     if t - last_heartbeat >= 15.0:
         last_heartbeat = t
-        print("alive  lang=%s  kbd=%s" % (
-            LANGUAGES[lang_idx]["code"], kb._dev is not None))
+        print("alive  lang=%s  kbd=%s  route=%s" % (
+            LANGUAGES[lang_idx]["code"], kb._dev is not None, audio_route))
+
+    # Headphone auto-route: poll detection status, debounce plug bounce,
+    # and only swap while audio is idle so route changes can't glitch
+    # playback. The status oscillates 0/1/3 during a single insertion;
+    # we wait HP_DEBOUNCE_SEC of steady reading before acting.
+    if t - last_hp_poll >= HP_POLL_SEC:
+        last_hp_poll = t
+        try:
+            hps = p.dac.headset_status
+        except Exception as hp_e:
+            hps = hp_pending_status
+            print("headset_status read err:", type(hp_e).__name__, hp_e)
+        if hps != hp_pending_status:
+            # Reset the debounce timer when the candidate value changes
+            print("headset_status: %d -> %d  (idle=%d, debouncing)" % (
+                hp_pending_status, hps, HP_IDLE_STATUS))
+            hp_pending_status = hps
+            hp_pending_since = t
+        elif (hp_pending_status != last_hp_status
+              and (t - hp_pending_since) >= HP_DEBOUNCE_SEC):
+            # Stable long enough — accept the new status
+            last_hp_status = hp_pending_status
+            print("headset_status stable at %d" % last_hp_status)
+            wanted = _wanted_route_from(last_hp_status)
+            if wanted != audio_route and not audio.playing:
+                print("audio route: %s -> %s (status=%d)" % (
+                    audio_route, wanted, last_hp_status))
+                try:
+                    p.audio_output = wanted
+                    audio_route = wanted
+                except Exception as r_e:
+                    print("audio_output set err:", type(r_e).__name__, r_e)
 
     # If help screen is up, only the timeout (or another F1) dismisses
     if help_until:
