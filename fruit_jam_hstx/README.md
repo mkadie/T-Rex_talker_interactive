@@ -9,7 +9,8 @@ See [`../fruit_jam_dvi/arduino_720p_PLAN.md`](../fruit_jam_dvi/arduino_720p_PLAN
 | Phase | Done? | Description |
 |---|---|---|
 | **P0** | ✅ | PlatformIO toolchain + blank sketch builds + flashes + boots with serial heartbeat |
-| P1 |  | HSTX 720p framebuffer (320×240 ×3 with pillarbox), solid color |
+| **P1'** | ✅ (build) | HSTX framebuffer at 320×240 ×2 (640×480 raster — vendored driver's ceiling). Solid color test. Hardware-validated: pending. |
+| P1.5 |  | Add 1280×720@60 (CEA VIC 4) timing constants + command lists to `src/hstx_fb/Framebuffer_RP2350.c`. Switches the default to 320×240 ×3 = 960×720 with 160 px pillarbox each side. |
 | P2 |  | BMP loader + show one Moana icon centered |
 | P3 |  | Static 4×2 grid (cells + icons + numbers) |
 | P4 |  | TLV320DAC3100 init + WAV playback |
@@ -76,6 +77,8 @@ fruit_jam_hstx/
 
 ## Third-party code
 
-(none yet at P0)
+| Component | Upstream | License | Used for |
+|---|---|---|---|
+| `src/hstx_fb/Framebuffer_RP2350.c` | [adafruit/fruitjam-doom @ adafruit-fruitjam](https://github.com/adafruit/fruitjam-doom/blob/adafruit-fruitjam/Framebuffer_RP2350.c) (originally from MicroPython) | MIT (per the file's own header — not GPL-2 like the rest of fruitjam-doom). Full text in `src/hstx_fb/LICENSE.txt`. | HSTX DVI/HDMI framebuffer driver — drives the RP2350's HSTX peripheral with a software framebuffer. Two local modifications, all flagged with `// MODIFIED 2026-05-09:` in the source. See `src/hstx_fb/README.md` for the diff summary. |
 
-This section is appended to as vendored code lands in later phases. Per the project's attribution rule (see `../fruit_jam_dvi/arduino_720p_PLAN.md` §3 "Attribution requirements"), every vendored file must have a header comment with its upstream URL and license **and** a row here describing what it's used for.
+Per the project's attribution rule (see `../fruit_jam_dvi/arduino_720p_PLAN.md` §3 "Attribution requirements"), every vendored file gets a header comment with its upstream URL and license **and** a row in this table describing what it's used for.

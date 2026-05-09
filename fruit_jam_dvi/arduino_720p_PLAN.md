@@ -12,7 +12,7 @@
 Researched 2026-05-09. Three things are non-obvious and steered the design:
 
 1. **Adafruit's `Adafruit-DVI-HSTX` Arduino library does NOT expose a 1280×720 framebuffer.** Its enum tops out at logical 720×400 / 640×480, automatically doubled into a 720×400 / 640×480 raster. The "1280×720 HSTX" announced on the Adafruit blog is the *unbuffered text mode only* (scanlines generated on the fly, no pixels you can write).
-2. **The real 1280×720 with arbitrary integer scaling** lives in [fruitjam-doom/Framebuffer_RP2350.c](https://github.com/adafruit/fruitjam-doom/blob/adafruit-fruitjam/Framebuffer_RP2350.c). Adafruit bypassed their own library to do it. That file already implements an `output_scaling` parameter for pixel doubling/tripling, and supports RGB888 / RGB565 / RGB332. **It is the reference HSTX driver for this port.**
+2. **A direct HSTX framebuffer driver with `output_scaling`** lives in [fruitjam-doom/Framebuffer_RP2350.c](https://github.com/adafruit/fruitjam-doom/blob/adafruit-fruitjam/Framebuffer_RP2350.c). Adafruit bypassed their own library and vendored this from MicroPython's port; **the file itself is MIT-licensed**, not GPL-2 (the parent repo is GPL-2 because of Doom). It supports RGB888 / RGB565 / RGB332 / RGBD / 1-bit grayscale. Two output rasters: **640×480** and **720×400**. **No 1280×720 mode** — that timing has to be added (P1.5). **Still the right reference driver** because adding a mode is much smaller than rewriting the HSTX command-list / TMDS-encoder bring-up.
 3. **Mike Bell's `dvhstx`** is Pimoroni-PicoGraphics-flavored, Pico-SDK / MicroPython-oriented — not Arduino-ready. Porting it would be at least as much work as adopting `Framebuffer_RP2350.c`. Going with the Doom driver.
 
 Other confirmed facts:
@@ -131,7 +131,8 @@ Each phase is its own commit. Test on hardware before the next phase. If a phase
 | Phase | Deliverable | Acceptance test |
 |---|---|---|
 | **P0** | Toolchain set up + blank sketch builds + flashes + boots | Serial prints "hello" |
-| **P1** | HSTX 720p with the Doom framebuffer driver, 426×240 ×3, fills with one solid color | Monitor shows 1280×720 single-color screen |
+| **P1'** | HSTX framebuffer at 320×240 ×2 (640×480 raster — the vendored driver's ceiling), filled with one solid color | Monitor shows 640×480 single-color screen |
+| **P1.5** | Add 1280×720@60 timing constants + command lists to the vendored framebuffer driver | Same sketch as P1' but at 320×240 ×3 with 160 px pillarbox in 1280×720 |
 | **P2** | BMP loader + show one Moana icon centered | Monitor shows the icon at the correct on-screen size |
 | **P3** | Static 4×2 grid: cell rectangles + icons + numbers | Grid matches CP demo's layout, just bigger |
 | **P4** | TLV320DAC3100 init + play one WAV from flash | Test sound plays through speaker |
@@ -179,7 +180,7 @@ All four pre-P0 questions resolved 2026-05-09:
 
 - **Default framebuffer:** 320×240 logical → ×3 pixel triple → 960×720 on-screen with 160 px pillarbox each side. Reuses every existing CP-demo asset unchanged.
 - **Filesystem:** LittleFS first (4 MB partition for core assets + Thai/English sounds), SD fallback for the other 10 languages. Resolver in `src/fs.cpp`.
-- **License:** vendor `fruitjam-doom`'s HSTX driver into `src/hstx_fb/` with its GPL-2 `LICENSE.txt` preserved alongside it. The rest of the sketch keeps T-Rex_talker_interactive's license.
+- **License:** vendor `fruitjam-doom`'s HSTX driver into `src/hstx_fb/`. Although the parent repo is GPL-2 (because of Doom), the file itself carries an **MIT** license per its own header — preserved verbatim in `src/hstx_fb/LICENSE.txt` and the file's own header comment.
 - **Directory name:** `fruit_jam_hstx/` (sibling of the CircuitPython `fruit_jam_dvi/`).
 
 ## 8 — Reversion strategy
