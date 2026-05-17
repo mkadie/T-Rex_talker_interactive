@@ -79,6 +79,7 @@ apply_patch () {
 }
 
 apply_patch "action.py"
+apply_patch "code.py"
 apply_patch "machine.py"
 apply_patch "config_reader.py"
 apply_patch "config.txt"

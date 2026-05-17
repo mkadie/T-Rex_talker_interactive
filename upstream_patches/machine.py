@@ -307,16 +307,32 @@ class Machine:
             print("Items:", len(self._menu_stack.items))
         self.set_status("ready")
 
-        # Show initial highlight if encoder navigation is active
-        self._has_encoder_nav = self._config.get("encoder_navigation", False)
+        # Encoder is repurposed as a language switcher on touch-input
+        # variants (CYD_PLUS). Skip menu-highlight wiring entirely so
+        # encoder rotation only drives the language overlay, not menu nav.
+        self._has_encoder_nav = False
         self._last_shown_index = -1
         self._emergency_hold_enabled = self._config.get("emergency_hold_enabled", True)
         self._emergency_hold_time = self._config.get("emergency_hold_seconds", 3)
         self._hold_start = 0
         self._hold_triggered = False
-        if self._has_encoder_nav:
-            self.display.set_highlight(self.input.selected_index)
-            self._update_text_for_index(self.input.selected_index)
+
+        # Language switcher overlay — encoder rotation enters; encoder
+        # click commits; 10s no-activity reverts to whatever menu was
+        # active before the rotation started.
+        self._lang_active = False
+        self._lang_index = 0
+        self._lang_timeout = 0
+        self._lang_revert_menu = None
+        try:
+            from stim_games.multi_lingual import LANGUAGES as _L
+            self._LANGUAGES = _L
+        except Exception as e:
+            print("Lang switcher: multi_lingual import failed:", e)
+            self._LANGUAGES = ()
+        enc = getattr(self.input, "_encoder", None)
+        self._lang_last_pos = enc.position if enc is not None else 0
+        self._lang_flip = getattr(self.input, "_encoder_flip", 1)
 
         # Config-driven subprogram mode: `mode = stim_games/foo.py` in
         # config.txt causes the device to boot into that subprogram
@@ -331,37 +347,121 @@ class Machine:
                 self.display.restore_background()
                 self._update_display()
                 self._last_shown_index = -1
-                if self._has_encoder_nav:
-                    self.display.set_highlight(self.input.selected_index)
-                    self._update_text_for_index(self.input.selected_index)
             except Exception as e:
                 print("Post-subprogram redraw error:", e)
+            # Resync encoder position so the picker doesn't fire on stale delta
+            enc = getattr(self.input, "_encoder", None)
+            if enc is not None:
+                self._lang_last_pos = enc.position
 
         wake_grace = self._config.get("wake_ignore_seconds", 1.0)
         wake_until = 0
 
         while True:
+            # Sample encoder-button state BEFORE poll() consumes it, so
+            # we can attribute the upcoming press to encoder vs. touch.
+            enc_btn_down = bool(getattr(self.input, "encoder_button_held", False))
+
             button = self.input.poll()
             if button is not None:
                 self.sleep.activity()
-                # Ignore input during wake grace period (prevents
-                # the touch that woke the screen from triggering a button)
                 if time.monotonic() >= wake_until:
-                    self._handle_press(button)
+                    if self._lang_active and enc_btn_down:
+                        # Picker overlay is up and the press came from the
+                        # encoder button → commit the highlighted language.
+                        self._lang_commit(self._lang_index)
+                        self._lang_active = False
+                    elif enc_btn_down:
+                        # Encoder press without picker active: encoder is
+                        # repurposed for language switching, so we ignore
+                        # it as a menu trigger.
+                        pass
+                    else:
+                        self._handle_press(button)
             else:
                 woke = self.sleep.check()
                 if woke:
                     wake_until = time.monotonic() + wake_grace
                     print("Wake grace: ignoring input for {}s".format(wake_grace))
-            # Check for emergency long-press
             if self._emergency_hold_enabled:
                 self._check_emergency_hold()
-            # Update highlight and text for encoder navigation
-            if self._has_encoder_nav:
-                idx = self.input.selected_index
-                self.display.set_highlight(idx)
-                self._update_text_for_index(idx)
+            self._check_lang_encoder()
             time.sleep(0.01)
+
+    def _check_lang_encoder(self):
+        """Encoder rotation enters/cycles the language picker overlay.
+
+        After 10s of no rotation/press the overlay reverts and the
+        previous menu is restored.
+        """
+        if not self._LANGUAGES:
+            return
+        enc = getattr(self.input, "_encoder", None)
+        if enc is None:
+            return
+        now = time.monotonic()
+        pos = enc.position
+        delta = pos - self._lang_last_pos
+        if delta != 0:
+            self._lang_last_pos = pos
+            if not self._lang_active:
+                # Entering: remember menu to revert to, seed index from it.
+                curr = None
+                if self._menu_stack is not None:
+                    stack = getattr(self._menu_stack, "_stack", None)
+                    if stack:
+                        curr = stack[-1]
+                self._lang_revert_menu = curr
+                self._lang_index = 0
+                for i, lang in enumerate(self._LANGUAGES):
+                    if lang[3] == curr:
+                        self._lang_index = i
+                        break
+                self._lang_active = True
+            self._lang_index = (self._lang_index - delta * self._lang_flip) % len(self._LANGUAGES)
+            self._lang_show()
+            self._lang_timeout = now + 10.0
+            self.sleep.activity()
+        elif self._lang_active and now >= self._lang_timeout:
+            self._lang_active = False
+            self.display.restore_background()
+            print("Lang switcher: timeout — reverted")
+
+    def _lang_show(self):
+        _code, en_name, native_name, _menu = self._LANGUAGES[self._lang_index]
+        path = "/lang_images/lang_{}.bmp".format(_code)
+        if self.storage is not None:
+            path = self.storage.resolve_path(path)
+        try:
+            self.display.show_image(path)
+        except Exception as e:
+            print("Lang switcher: image error ({}):".format(e), path)
+            try:
+                self.display.set_text("{} / {}".format(en_name, native_name))
+            except Exception:
+                pass
+        print("Lang switcher: highlight", en_name)
+
+    def _lang_commit(self, index):
+        _code, en_name, _native, menu_file = self._LANGUAGES[index]
+        print("Lang switcher: commit", en_name, "->", menu_file)
+        self.display.restore_background()
+        from menu_parser import MenuStack
+        for attempt in range(3):
+            try:
+                self._menu_stack = MenuStack(
+                    self._menus_dir, menu_file, storage=self.storage)
+                self._build_grid()
+                self._update_display()
+                if hasattr(self, "_reset_selection"):
+                    self._reset_selection()
+                print("Lang switcher: loaded", menu_file)
+                return
+            except Exception as e:
+                print("Lang switcher: load attempt {} failed: {}".format(
+                    attempt + 1, e))
+                time.sleep(0.1)
+        print("Lang switcher: gave up loading", menu_file)
 
     def _check_emergency_hold(self):
         """Check if encoder button is held for emergency_hold_seconds.
