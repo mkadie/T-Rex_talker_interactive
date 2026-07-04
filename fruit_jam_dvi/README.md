@@ -38,6 +38,13 @@ Total framebuffer: 320×240, auto-doubled to 640×480 HDMI by the firmware.
 | Shift-Tab | Previous language |
 | F1 | Show 5 s help screen with all 13 languages numbered in their native scripts; current language highlighted |
 
+> **USB keyboard must be plugged in before boot.** The PIO-USB host port
+> is brought up once by `boot.py`, which runs only on power-on / hard
+> reset — never on a soft reboot (Ctrl-D, auto-reload). A keyboard
+> hot-plugged into an already-running board is never enumerated
+> (`usb.core.find()` returns 0 devices, the demo logs `kbd=False`
+> forever). Plug the keyboard in **first**, then hard-reset. See "Deploying".
+
 ## Files
 
 ```
@@ -85,6 +92,14 @@ After first install, **hard-reset** the Fruit Jam (unplug/replug USB or
 press the reset button) so `boot.py` runs and the USB host port comes
 up. Subsequent edits to `code.py` auto-reload normally.
 
+Because the USB host port only initializes in `boot.py` at hard reset,
+**connect the USB keyboard before that reset** (or press the reset button
+after plugging it in). Hot-plugging a keyboard onto a running board does
+nothing — the host stack enumerates devices only at startup. From the
+REPL, `import microcontroller; microcontroller.reset()` is a full reset
+that re-runs `boot.py` (the serial port drops and re-appears within a few
+seconds).
+
 ## Validation
 
 Hardware-tested 2026-05-09 on Fruit Jam CFC632F82988649F (CircuitPython
@@ -96,7 +111,11 @@ exhibits — that's a different audio chip story).
 Re-deployed 2026-07-04 on the same board (CircuitPython 10.1.4) with the
 13th language (German) added: DVI comes up 320x240 -> 640x480, the DAC
 initializes, and all 13 languages enumerate at boot. The help-screen line
-height dropped 17 -> 16 px so 13 entries fit the 240 px screen.
+height dropped 17 -> 16 px so 13 entries fit the 240 px screen. German
+verified end-to-end: banner loads and all 8 German WAVs play through the
+DAC. USB keyboard confirmed working (number keys play words, Tab cycles
+languages) — but only after a hard reset with the keyboard already
+attached (see "Deploying").
 
 ## Why this is a sub-program
 
