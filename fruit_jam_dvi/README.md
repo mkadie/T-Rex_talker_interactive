@@ -2,9 +2,9 @@
 
 An 8-button AAC board running on the Adafruit Fruit Jam, using the
 onboard DVI/HDMI output, USB host keyboard, and TLV320DAC3100 audio.
-Cycles through 12 languages (Thai, Japanese, English, Mandarin, Hindi,
-Spanish, French, Arabic, Bengali, Portuguese, Russian, Czech) using the
-language packs already shipped in this repo.
+Cycles through 13 languages (Thai, Japanese, English, Mandarin, Hindi,
+Spanish, French, Arabic, Bengali, Portuguese, Russian, Czech, German)
+using the language packs already shipped in this repo.
 
 ## Hardware
 
@@ -36,7 +36,7 @@ Total framebuffer: 320×240, auto-doubled to 640×480 HDMI by the firmware.
 | Keyboard 1–8 / BUTTON1–3 | Activate cell — full-screen Moana icon + sound in current language; held ≥1.5 s |
 | Tab | Next language |
 | Shift-Tab | Previous language |
-| F1 | Show 5 s help screen with all 12 languages numbered in their native scripts; current language highlighted |
+| F1 | Show 5 s help screen with all 13 languages numbered in their native scripts; current language highlighted |
 
 ## Files
 
@@ -55,7 +55,7 @@ licensed under NeedsBoard's terms).
 
 ## Deploying
 
-The demo needs the language banners + help screen + 12 language sound
+The demo needs the language banners + help screen + 13 language sound
 packs that already live in this repo's `out/` directory. Copy everything
 to the Fruit Jam's CIRCUITPY drive in this layout:
 
@@ -76,7 +76,7 @@ the `_<native_suffix>` part of the filename (or the English-only `.wav`
 for `en`) so the device sees plain `<word>.wav` paths. The demo expects:
 
 - `<word>` ∈ {`milk`, `water`, `snack`, `play`, `mum`, `yes`, `no`, `thankyou`}
-- `<code>` ∈ {`th`, `ja`, `en`, `zh`, `hi`, `es`, `fr`, `ar`, `bn`, `pt`, `ru`, `cs`}
+- `<code>` ∈ {`th`, `ja`, `en`, `zh`, `hi`, `es`, `fr`, `ar`, `bn`, `pt`, `ru`, `cs`, `de`}
 
 (One-shot deploy script is left as an exercise — the existing `install.sh`
 in this repo can serve as a template.)
@@ -92,6 +92,11 @@ Hardware-tested 2026-05-09 on Fruit Jam CFC632F82988649F (CircuitPython
 their native scripts, all 96 sound files play cleanly through the
 TLV320DAC3100 (no MP3-on-direct-I2S distortion the Feather RP2350 path
 exhibits — that's a different audio chip story).
+
+Re-deployed 2026-07-04 on the same board (CircuitPython 10.1.4) with the
+13th language (German) added: DVI comes up 320x240 -> 640x480, the DAC
+initializes, and all 13 languages enumerate at boot. The help-screen line
+height dropped 17 -> 16 px so 13 entries fit the 240 px screen.
 
 ## Why this is a sub-program
 

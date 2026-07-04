@@ -12,7 +12,7 @@ Layout (320x240 framebuffer -> 640x480 HDMI):
 Inputs:
   - Numeric keys / keypad 1..8 -> activate cell 1..8
   - BUTTON1 / BUTTON2 / BUTTON3 -> activate cell 1 / 2 / 3
-  - F1                  -> show 5 s help screen (lists all 12 languages)
+  - F1                  -> show 5 s help screen (lists all 13 languages)
   - Space               -> manually toggle audio route (most useful while a
                           headphone is plugged in to override the auto-route)
   - Tab                 -> next language
@@ -26,10 +26,10 @@ that until the next physical plug change.
 Files expected on the CIRCUITPY drive:
   /boot.py                     usb_host setup (PIO-USB host port)
   /lang/lang_<code>.bmp             320x40 native-font language banners
-  /help.bmp                         320x240 help screen (all 12 languages)
+  /help.bmp                         320x240 help screen (all 13 languages)
   /images/moana/icon_<n>.bmp        80x100 Moana icon for each of 8 cells
   /images/moana_full/icon_<n>.bmp   320x240 full-screen icon shown on press
-  /sounds/<code>/<word>.wav    per-language sound files (12 codes,
+  /sounds/<code>/<word>.wav    per-language sound files (13 codes,
                                8 words each: milk, water, snack, play,
                                mum, yes, no, thankyou)
 """
@@ -170,7 +170,7 @@ ICON_PATHS = ["/images/moana/icon_%d.bmp" % i for i in range(1, NUM_CELLS + 1)]
 ICON_FULL_PATHS = ["/images/moana_full/icon_%d.bmp" % i for i in range(1, NUM_CELLS + 1)]
 PRESS_MIN_HOLD = 1.5   # seconds — full-screen stays at least this long
 
-# 12 languages, same order as upstream talker_v3/machine.py LANGUAGES
+# 13 languages, same order as upstream talker_v3/machine.py LANGUAGES
 LANGUAGES = [
     {"code": "th", "english": "Thai",       "banner": "/lang/lang_th.bmp"},
     {"code": "ja", "english": "Japanese",   "banner": "/lang/lang_ja.bmp"},
@@ -184,6 +184,7 @@ LANGUAGES = [
     {"code": "pt", "english": "Portuguese", "banner": "/lang/lang_pt.bmp"},
     {"code": "ru", "english": "Russian",    "banner": "/lang/lang_ru.bmp"},
     {"code": "cs", "english": "Czech",      "banner": "/lang/lang_cs.bmp"},
+    {"code": "de", "english": "German",     "banner": "/lang/lang_de.bmp"},
 ]
 
 
@@ -455,9 +456,9 @@ HELP_DURATION = 5.0   # seconds
 def build_help_screen():
     """Full-screen 320x240 group: pre-rendered help BMP + movable highlight.
 
-    The BMP at /help.bmp shows a title bar plus 12 numbered language entries.
-    A 320x17 yellow border overlay marks the currently active language.
-    Layout in the BMP: ENTRY_TOP=32, LINE_H=17.
+    The BMP at /help.bmp shows a title bar plus 13 numbered language entries.
+    A 320x16 yellow border overlay marks the currently active language.
+    Layout in the BMP: ENTRY_TOP=32, LINE_H=16.
     """
     g = displayio.Group()
     try:
@@ -470,7 +471,7 @@ def build_help_screen():
         g.append(displayio.TileGrid(bmp, pixel_shader=pal))
 
     # Yellow border overlay for the currently active language line
-    line_h = 17
+    line_h = 16
     bmp = displayio.Bitmap(FB_W, line_h, 2)
     pal = displayio.Palette(2)
     pal[0] = 0x000000
@@ -491,7 +492,7 @@ def build_help_screen():
 
 
 HELP_ENTRY_TOP = 32
-HELP_LINE_H = 17
+HELP_LINE_H = 16
 
 help_screen, help_cursor = build_help_screen()
 help_until = 0.0   # 0 = help not active
