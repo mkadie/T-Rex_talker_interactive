@@ -1,0 +1,77 @@
+# ===================================================
+#  Language Menu — Portuguese / Português
+#
+#  Layout (4 columns x 2 rows):
+#
+#  +----------+----------+----------+----------+
+#  |   Milk   |  Water   |  Snack   |   Play   |
+#  |    1     |    2     |    3     |    4     |
+#  +----------+----------+----------+----------+
+#  |   Mum    |   Yes    |    No    | Thank You|
+#  |    5     |    6     |    7     |    8     |
+#  +----------+----------+----------+----------+
+# ===================================================
+
+[menu]
+name = Portuguese / Português
+text_description = Português
+type = grid
+columns = 4
+rows = 2
+background = /lcd_images/0_needs_small_unc.bmp
+
+[milk]
+label = Milk
+text_description = Milk / leite
+image = /lcd_images/8_Icons-01.bmp
+sound = /button_sounds/languages/pt/milk_leite.wav
+position = 1
+
+[water]
+label = Water
+text_description = Water / água
+image = /lcd_images/8_Icons-02.bmp
+sound = /button_sounds/languages/pt/water_água.wav
+position = 2
+
+[snack]
+label = Snack
+text_description = Snack / lanche
+image = /lcd_images/8_Icons-03.bmp
+sound = /button_sounds/languages/pt/snack_lanche.wav
+position = 3
+
+[play]
+label = Play
+text_description = Play / brincar
+image = /lcd_images/8_Icons-04.bmp
+sound = /button_sounds/languages/pt/play_brincar.wav
+position = 4
+
+[mum]
+label = Mum
+text_description = Mum / mamãe
+image = /lcd_images/8_Icons-05.bmp
+sound = /button_sounds/languages/pt/mum_mamãe.wav
+position = 5
+
+[yes]
+label = Yes
+text_description = Yes / sim
+image = /lcd_images/8_Icons-06.bmp
+sound = /button_sounds/languages/pt/yes_sim.wav
+position = 6
+
+[no]
+label = No
+text_description = No / não
+image = /lcd_images/8_Icons-07.bmp
+sound = /button_sounds/languages/pt/no_não.wav
+position = 7
+
+[thankyou]
+label = Thank You
+text_description = Thank You / obrigado
+image = /lcd_images/8_Icons-08.bmp
+sound = /button_sounds/languages/pt/thankyou_obrigado.wav
+position = 8

@@ -1,0 +1,77 @@
+# ===================================================
+#  Language Menu — Arabic / العربية
+#
+#  Layout (4 columns x 2 rows):
+#
+#  +----------+----------+----------+----------+
+#  |   Milk   |  Water   |  Snack   |   Play   |
+#  |    1     |    2     |    3     |    4     |
+#  +----------+----------+----------+----------+
+#  |   Mum    |   Yes    |    No    | Thank You|
+#  |    5     |    6     |    7     |    8     |
+#  +----------+----------+----------+----------+
+# ===================================================
+
+[menu]
+name = Arabic / العربية
+text_description = العربية
+type = grid
+columns = 4
+rows = 2
+background = /lcd_images/0_needs_small_unc.bmp
+
+[milk]
+label = Milk
+text_description = Milk / حليب
+image = /lcd_images/8_Icons-01.bmp
+sound = /button_sounds/languages/ar/milk_حليب.wav
+position = 1
+
+[water]
+label = Water
+text_description = Water / ماء
+image = /lcd_images/8_Icons-02.bmp
+sound = /button_sounds/languages/ar/water_ماء.wav
+position = 2
+
+[snack]
+label = Snack
+text_description = Snack / وجبة
+image = /lcd_images/8_Icons-03.bmp
+sound = /button_sounds/languages/ar/snack_وجبة.wav
+position = 3
+
+[play]
+label = Play
+text_description = Play / لعب
+image = /lcd_images/8_Icons-04.bmp
+sound = /button_sounds/languages/ar/play_لعب.wav
+position = 4
+
+[mum]
+label = Mum
+text_description = Mum / ماما
+image = /lcd_images/8_Icons-05.bmp
+sound = /button_sounds/languages/ar/mum_ماما.wav
+position = 5
+
+[yes]
+label = Yes
+text_description = Yes / نعم
+image = /lcd_images/8_Icons-06.bmp
+sound = /button_sounds/languages/ar/yes_نعم.wav
+position = 6
+
+[no]
+label = No
+text_description = No / لا
+image = /lcd_images/8_Icons-07.bmp
+sound = /button_sounds/languages/ar/no_لا.wav
+position = 7
+
+[thankyou]
+label = Thank You
+text_description = Thank You / شكراً
+image = /lcd_images/8_Icons-08.bmp
+sound = /button_sounds/languages/ar/thankyou_شكراً.wav
+position = 8

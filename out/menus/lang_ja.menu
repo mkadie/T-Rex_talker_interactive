@@ -1,0 +1,77 @@
+# ===================================================
+#  Language Menu — Japanese / 日本語
+#
+#  Layout (4 columns x 2 rows):
+#
+#  +----------+----------+----------+----------+
+#  |   Milk   |  Water   |  Snack   |   Play   |
+#  |    1     |    2     |    3     |    4     |
+#  +----------+----------+----------+----------+
+#  |   Mum    |   Yes    |    No    | Thank You|
+#  |    5     |    6     |    7     |    8     |
+#  +----------+----------+----------+----------+
+# ===================================================
+
+[menu]
+name = Japanese / 日本語
+text_description = 日本語
+type = grid
+columns = 4
+rows = 2
+background = /lcd_images/0_needs_small_unc.bmp
+
+[milk]
+label = Milk
+text_description = Milk / 牛乳
+image = /lcd_images/8_Icons-01.bmp
+sound = /button_sounds/languages/ja/milk_牛乳.wav
+position = 1
+
+[water]
+label = Water
+text_description = Water / お水
+image = /lcd_images/8_Icons-02.bmp
+sound = /button_sounds/languages/ja/water_お水.wav
+position = 2
+
+[snack]
+label = Snack
+text_description = Snack / おやつ
+image = /lcd_images/8_Icons-03.bmp
+sound = /button_sounds/languages/ja/snack_おやつ.wav
+position = 3
+
+[play]
+label = Play
+text_description = Play / 遊ぶ
+image = /lcd_images/8_Icons-04.bmp
+sound = /button_sounds/languages/ja/play_遊ぶ.wav
+position = 4
+
+[mum]
+label = Mum
+text_description = Mum / ママ
+image = /lcd_images/8_Icons-05.bmp
+sound = /button_sounds/languages/ja/mum_ママ.wav
+position = 5
+
+[yes]
+label = Yes
+text_description = Yes / はい
+image = /lcd_images/8_Icons-06.bmp
+sound = /button_sounds/languages/ja/yes_はい.wav
+position = 6
+
+[no]
+label = No
+text_description = No / いいえ
+image = /lcd_images/8_Icons-07.bmp
+sound = /button_sounds/languages/ja/no_いいえ.wav
+position = 7
+
+[thankyou]
+label = Thank You
+text_description = Thank You / ありがとう
+image = /lcd_images/8_Icons-08.bmp
+sound = /button_sounds/languages/ja/thankyou_ありがとう.wav
+position = 8

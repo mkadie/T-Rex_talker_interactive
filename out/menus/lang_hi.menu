@@ -1,0 +1,77 @@
+# ===================================================
+#  Language Menu — Hindi / हिन्दी
+#
+#  Layout (4 columns x 2 rows):
+#
+#  +----------+----------+----------+----------+
+#  |   Milk   |  Water   |  Snack   |   Play   |
+#  |    1     |    2     |    3     |    4     |
+#  +----------+----------+----------+----------+
+#  |   Mum    |   Yes    |    No    | Thank You|
+#  |    5     |    6     |    7     |    8     |
+#  +----------+----------+----------+----------+
+# ===================================================
+
+[menu]
+name = Hindi / हिन्दी
+text_description = हिन्दी
+type = grid
+columns = 4
+rows = 2
+background = /lcd_images/0_needs_small_unc.bmp
+
+[milk]
+label = Milk
+text_description = Milk / दूध
+image = /lcd_images/8_Icons-01.bmp
+sound = /button_sounds/languages/hi/milk_दूध.wav
+position = 1
+
+[water]
+label = Water
+text_description = Water / पानी
+image = /lcd_images/8_Icons-02.bmp
+sound = /button_sounds/languages/hi/water_पानी.wav
+position = 2
+
+[snack]
+label = Snack
+text_description = Snack / नाश्ता
+image = /lcd_images/8_Icons-03.bmp
+sound = /button_sounds/languages/hi/snack_नाश्ता.wav
+position = 3
+
+[play]
+label = Play
+text_description = Play / खेलो
+image = /lcd_images/8_Icons-04.bmp
+sound = /button_sounds/languages/hi/play_खेलो.wav
+position = 4
+
+[mum]
+label = Mum
+text_description = Mum / माँ
+image = /lcd_images/8_Icons-05.bmp
+sound = /button_sounds/languages/hi/mum_माँ.wav
+position = 5
+
+[yes]
+label = Yes
+text_description = Yes / हाँ
+image = /lcd_images/8_Icons-06.bmp
+sound = /button_sounds/languages/hi/yes_हाँ.wav
+position = 6
+
+[no]
+label = No
+text_description = No / नहीं
+image = /lcd_images/8_Icons-07.bmp
+sound = /button_sounds/languages/hi/no_नहीं.wav
+position = 7
+
+[thankyou]
+label = Thank You
+text_description = Thank You / धन्यवाद
+image = /lcd_images/8_Icons-08.bmp
+sound = /button_sounds/languages/hi/thankyou_धन्यवाद.wav
+position = 8

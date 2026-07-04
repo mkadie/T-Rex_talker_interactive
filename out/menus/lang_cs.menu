@@ -1,0 +1,77 @@
+# ===================================================
+#  Language Menu — Czech / Čeština
+#
+#  Layout (4 columns x 2 rows):
+#
+#  +----------+----------+----------+----------+
+#  |   Milk   |  Water   |  Snack   |   Play   |
+#  |    1     |    2     |    3     |    4     |
+#  +----------+----------+----------+----------+
+#  |   Mum    |   Yes    |    No    | Thank You|
+#  |    5     |    6     |    7     |    8     |
+#  +----------+----------+----------+----------+
+# ===================================================
+
+[menu]
+name = Czech / Čeština
+text_description = Čeština
+type = grid
+columns = 4
+rows = 2
+background = /lcd_images/0_needs_small_unc.bmp
+
+[milk]
+label = Milk
+text_description = Milk / mléko
+image = /lcd_images/8_Icons-01.bmp
+sound = /button_sounds/languages/cs/milk_mléko.wav
+position = 1
+
+[water]
+label = Water
+text_description = Water / voda
+image = /lcd_images/8_Icons-02.bmp
+sound = /button_sounds/languages/cs/water_voda.wav
+position = 2
+
+[snack]
+label = Snack
+text_description = Snack / svačina
+image = /lcd_images/8_Icons-03.bmp
+sound = /button_sounds/languages/cs/snack_svačina.wav
+position = 3
+
+[play]
+label = Play
+text_description = Play / hrát
+image = /lcd_images/8_Icons-04.bmp
+sound = /button_sounds/languages/cs/play_hrát.wav
+position = 4
+
+[mum]
+label = Mum
+text_description = Mum / máma
+image = /lcd_images/8_Icons-05.bmp
+sound = /button_sounds/languages/cs/mum_máma.wav
+position = 5
+
+[yes]
+label = Yes
+text_description = Yes / ano
+image = /lcd_images/8_Icons-06.bmp
+sound = /button_sounds/languages/cs/yes_ano.wav
+position = 6
+
+[no]
+label = No
+text_description = No / ne
+image = /lcd_images/8_Icons-07.bmp
+sound = /button_sounds/languages/cs/no_ne.wav
+position = 7
+
+[thankyou]
+label = Thank You
+text_description = Thank You / děkuji
+image = /lcd_images/8_Icons-08.bmp
+sound = /button_sounds/languages/cs/thankyou_děkuji.wav
+position = 8

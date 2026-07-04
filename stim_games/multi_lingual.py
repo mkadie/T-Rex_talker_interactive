@@ -37,6 +37,7 @@ LANGUAGES = (
     ("pt", "Portuguese", "Português",                          "lang_pt.menu"),
     ("ru", "Russian",    "Русский", "lang_ru.menu"),
     ("cs", "Czech",      "Čeština",                       "lang_cs.menu"),
+    ("de", "German",     "Deutsch",                            "lang_de.menu"),
 )
 
 DEFAULT_CODE = "en"

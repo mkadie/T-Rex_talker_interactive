@@ -1,0 +1,77 @@
+# ===================================================
+#  Language Menu — Russian / Русский
+#
+#  Layout (4 columns x 2 rows):
+#
+#  +----------+----------+----------+----------+
+#  |   Milk   |  Water   |  Snack   |   Play   |
+#  |    1     |    2     |    3     |    4     |
+#  +----------+----------+----------+----------+
+#  |   Mum    |   Yes    |    No    | Thank You|
+#  |    5     |    6     |    7     |    8     |
+#  +----------+----------+----------+----------+
+# ===================================================
+
+[menu]
+name = Russian / Русский
+text_description = Русский
+type = grid
+columns = 4
+rows = 2
+background = /lcd_images/0_needs_small_unc.bmp
+
+[milk]
+label = Milk
+text_description = Milk / молоко
+image = /lcd_images/8_Icons-01.bmp
+sound = /button_sounds/languages/ru/milk_молоко.wav
+position = 1
+
+[water]
+label = Water
+text_description = Water / вода
+image = /lcd_images/8_Icons-02.bmp
+sound = /button_sounds/languages/ru/water_вода.wav
+position = 2
+
+[snack]
+label = Snack
+text_description = Snack / перекус
+image = /lcd_images/8_Icons-03.bmp
+sound = /button_sounds/languages/ru/snack_перекус.wav
+position = 3
+
+[play]
+label = Play
+text_description = Play / играть
+image = /lcd_images/8_Icons-04.bmp
+sound = /button_sounds/languages/ru/play_играть.wav
+position = 4
+
+[mum]
+label = Mum
+text_description = Mum / мама
+image = /lcd_images/8_Icons-05.bmp
+sound = /button_sounds/languages/ru/mum_мама.wav
+position = 5
+
+[yes]
+label = Yes
+text_description = Yes / да
+image = /lcd_images/8_Icons-06.bmp
+sound = /button_sounds/languages/ru/yes_да.wav
+position = 6
+
+[no]
+label = No
+text_description = No / нет
+image = /lcd_images/8_Icons-07.bmp
+sound = /button_sounds/languages/ru/no_нет.wav
+position = 7
+
+[thankyou]
+label = Thank You
+text_description = Thank You / спасибо
+image = /lcd_images/8_Icons-08.bmp
+sound = /button_sounds/languages/ru/thankyou_спасибо.wav
+position = 8
