@@ -512,6 +512,14 @@ the entry point `Machine._launch_subprogram()` calls into.
 - **Simulator mode** — a host-side harness that stubs out the
   hardware subsystems so games can be tested on a laptop before
   flashing.
+- **Subprogram marketplace/selector** — Need a strategy for selecting
+  which subprograms from the GitHub repo to install on a specific
+  device. Currently all subprograms are deployed together. Consider:
+  a manifest file listing available subprograms with descriptions,
+  a CLI tool or web page to select which ones to install, per-device
+  subprogram configuration via config.txt or a subprogram.cfg, and
+  an installer that only copies selected subprograms + their
+  dependencies (sounds, configs, menus).
 
 ---
 

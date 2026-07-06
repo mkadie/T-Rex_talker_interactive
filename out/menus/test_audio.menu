@@ -1,0 +1,71 @@
+# ===================================================
+#  Audio Test Menu
+#
+#  Button 1: apple.mp3 (known working, 44100Hz MP3)
+#  Button 2: Thai snack (WAV, 16kHz — original Moana)
+#  Button 3-8: Snack in other languages
+# ===================================================
+
+[menu]
+name = Audio Test
+text_description = Audio Test
+type = grid
+columns = 4
+rows = 2
+background = /lcd_images/0_needs_small_unc.bmp
+
+[apple_mp3]
+label = Apple MP3
+text_description = apple.mp3 44kHz
+image = /lcd_images/8_Icons-03.bmp
+sound = /sounds/test/apple.mp3
+position = 1
+
+[thai_wav]
+label = Thai WAV
+text_description = snack Thai WAV 16k
+image = /lcd_images/8_Icons-03.bmp
+sound = /sounds/test/snack_th.wav
+position = 2
+
+[ja_wav]
+label = Japan WAV
+text_description = snack Japanese WAV
+image = /lcd_images/8_Icons-03.bmp
+sound = /sounds/test/snack_ja.wav
+position = 3
+
+[zh_wav]
+label = China WAV
+text_description = snack Chinese WAV
+image = /lcd_images/8_Icons-03.bmp
+sound = /sounds/test/snack_zh.wav
+position = 4
+
+[en_mp3]
+label = English MP3
+text_description = snack English MP3
+image = /lcd_images/8_Icons-03.bmp
+sound = /sounds/test/snack_en.mp3
+position = 5
+
+[es_mp3]
+label = Spanish MP3
+text_description = snack Spanish MP3
+image = /lcd_images/8_Icons-03.bmp
+sound = /sounds/test/snack_es.mp3
+position = 6
+
+[fr_mp3]
+label = French MP3
+text_description = snack French MP3
+image = /lcd_images/8_Icons-03.bmp
+sound = /sounds/test/snack_fr.mp3
+position = 7
+
+[de_mp3]
+label = German MP3
+text_description = snack German MP3
+image = /lcd_images/8_Icons-03.bmp
+sound = /sounds/test/snack_de.mp3
+position = 8
