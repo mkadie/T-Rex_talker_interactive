@@ -11,7 +11,9 @@ Layout (320x240 framebuffer -> 640x480 HDMI):
 
 Inputs:
   - Numeric keys / keypad 1..8 -> activate cell 1..8
-  - BUTTON1 / BUTTON2 / BUTTON3 -> activate cell 1 / 2 / 3
+  - BUTTON1             -> advance the on-screen selection (next cell)
+  - BUTTON2             -> activate the selected cell
+  - BUTTON3             -> next language
   - F1                  -> show 5 s help screen (lists all 13 languages)
   - Space               -> manually toggle audio route (most useful while a
                           headphone is plugged in to override the auto-route)
@@ -432,6 +434,7 @@ class Kbd:
 
 # --- Main ------------------------------------------------------------------
 lang_idx = 0   # start on Thai
+sel_idx = 0    # currently-highlighted cell (0..7); BUTTON1 advances it
 
 # Persistent layers, attached to root in this order:
 #   root[0] = grid (cells + icons + numbers)  -- swapped on language change
@@ -447,6 +450,15 @@ root.append(grid_layer)
 root.append(band_idle_group)
 root.append(highlight)
 display.root_group = root
+
+
+def position_highlight(idx):
+    """Move the yellow selection border onto cell `idx` (0..NUM_CELLS-1)."""
+    highlight.x = (idx % COLS) * CELL_W
+    highlight.y = (idx // COLS) * CELL_H
+
+
+position_highlight(sel_idx)   # show the initial selection
 
 
 # --- Help screen -----------------------------------------------------------
@@ -518,7 +530,10 @@ kb._try_attach()
 prev_phys = (p.button1, p.button2, p.button3)
 last_heartbeat = 0.0
 
-print("\nREADY  keys 1..8 / BUTTON1-3 to play")
+print("\nREADY  keys 1..8 to play")
+print("       BUTTON1         -> advance selection")
+print("       BUTTON2         -> activate selection")
+print("       BUTTON3         -> next language")
 print("       F1              -> help screen (5 s)")
 print("       Space           -> toggle speaker/headphone")
 print("       Tab             -> next language")
@@ -531,11 +546,22 @@ while True:
     raw_keys = set()
     mods = 0
 
+    # Three onboard buttons drive an encoder-style nav (rising-edge only):
+    #   BUTTON1 -> advance selection   BUTTON2 -> activate it   BUTTON3 -> lang
     cur_phys = (p.button1, p.button2, p.button3)
-    for i in range(3):
-        if cur_phys[i] and not prev_phys[i]:
-            pressed_cells.add(i)
+    b1_edge = cur_phys[0] and not prev_phys[0]
+    b2_edge = cur_phys[1] and not prev_phys[1]
+    b3_edge = cur_phys[2] and not prev_phys[2]
     prev_phys = cur_phys
+
+    if b1_edge:
+        sel_idx = (sel_idx + 1) % NUM_CELLS
+        position_highlight(sel_idx)
+        print("SELECT -> idx=%d (%s)" % (sel_idx, WORDS[sel_idx][0]))
+    if b3_edge:
+        set_language(lang_idx + 1)
+    if b2_edge:
+        pressed_cells.add(sel_idx)
 
     cells, raw, m = kb.poll()
     pressed_cells |= cells
@@ -632,11 +658,10 @@ while True:
             print("PRESS idx=%d  %s [%s]  -> %s  (mem_free=%d)" % (
                 idx, en_word, L["code"], snd, free))
 
-            # Move highlight to active cell so it's correct when grid returns
-            col = idx % COLS
-            row = idx // COLS
-            highlight.x = col * CELL_W
-            highlight.y = row * CELL_H
+            # Keep the selection on the activated cell so the highlight is
+            # correct when the grid returns (whether keyboard or BUTTON2).
+            sel_idx = idx
+            position_highlight(sel_idx)
 
             # Show the icon full-screen while audio plays
             full = build_full_icon(idx)

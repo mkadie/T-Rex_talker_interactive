@@ -33,7 +33,10 @@ Total framebuffer: 320×240, auto-doubled to 640×480 HDMI by the firmware.
 
 | Input | Action |
 |---|---|
-| Keyboard 1–8 / BUTTON1–3 | Activate cell — full-screen Moana icon + sound in current language; held ≥1.5 s |
+| Keyboard 1–8 | Activate cell — full-screen Moana icon + sound in current language; held ≥1.5 s |
+| BUTTON1 | Advance the on-screen selection (yellow highlight) to the next cell |
+| BUTTON2 | Activate the selected cell (same as pressing its number) |
+| BUTTON3 | Next language |
 | Tab | Next language |
 | Shift-Tab | Previous language |
 | F1 | Show 5 s help screen with all 13 languages numbered in their native scripts; current language highlighted |
