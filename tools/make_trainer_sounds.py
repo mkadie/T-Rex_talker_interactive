@@ -67,7 +67,8 @@ import sys
 PROMPTS = [
     # --- Framing prompts ---
     ("welcome.mp3",
-     "Welcome to T-Rex's Rubber Chicken Challenge! Press the button to begin."),
+     "Welcome to T-Rex's Rubber Chicken Challenge! "
+     "Press a button or squeeze the chicken to begin."),
     ("correct.mp3",   "Yes, that's right!"),
     ("try_again.mp3", "Not quite — try again."),
     ("finished.mp3",  "Great job! You finished the round."),
