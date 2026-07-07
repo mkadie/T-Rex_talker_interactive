@@ -1,0 +1,12 @@
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Local Claude Code config (per-machine permissions, not shared)
+.claude/
+
+# OS / editor cruft
+.DS_Store
+*.swp
