@@ -1,4 +1,4 @@
-"""AAC Communication Game.
+"""T-Rex's Rubber Chicken Challenge (AAC communication game).
 
 Runs on top of the base AAC software. The game loads a menu of AAC
 items (by default the current start_menu), plays an audio prompt,
@@ -56,7 +56,7 @@ def _is_profane(name):
 
 
 class AacTrainer(Subprogram):
-    name = "Communication Game"
+    name = "T-Rex's Rubber Chicken Challenge"
 
     # ----- lifecycle ----------------------------------------------------
 
@@ -85,7 +85,7 @@ class AacTrainer(Subprogram):
         self._round_index = 0
         self._questions = list(secs.get("question", []))
         if not self._questions:
-            print("Communication Game: no questions configured; nothing to do")
+            print("Chicken Challenge: no questions configured; nothing to do")
             self._done = True
             return
 
@@ -167,7 +167,7 @@ class AacTrainer(Subprogram):
         elif ev == "select":
             self._commit_selection()
         elif ev == "exit":
-            print("Communication Game: exit gesture")
+            print("Chicken Challenge: exit gesture")
             return False
 
         return True
@@ -176,7 +176,7 @@ class AacTrainer(Subprogram):
         """Handle scoring, name entry, and hiscore save after a round."""
         elapsed = time.monotonic() - self._run_start
         total = elapsed + self._score_sec
-        print("Communication Game: run finished in {:.1f}s "
+        print("Chicken Challenge: run finished in {:.1f}s "
               "(wrong: {})".format(total, self._wrong_count))
         self._say(self._done_sound)
 
@@ -239,9 +239,9 @@ class AacTrainer(Subprogram):
             with open(HISCORE_FILE, "w") as f:
                 for secs, name in self._hiscores:
                     f.write("{:.1f} {}\n".format(secs, name))
-            print("Communication Game: saved hiscores")
+            print("Chicken Challenge: saved hiscores")
         except Exception as e:
-            print("Communication Game: could not save hiscores:", e)
+            print("Chicken Challenge: could not save hiscores:", e)
 
     def _get_rank(self, total_seconds):
         """Return rank (0-2) if this time beats a top-3 score, else None."""
@@ -289,7 +289,7 @@ class AacTrainer(Subprogram):
         # Title — single label
         title_lbl = label.Label(
             terminalio.FONT,
-            text="Communication Game",
+            text="T-Rex's Rubber\nChicken Challenge",
             color=0xFFFF00,
             scale=2,
             anchor_point=(0.5, 0.0),
@@ -461,9 +461,9 @@ class AacTrainer(Subprogram):
 
         if _is_profane(result):
             result = "Rude!"
-            print("Communication Game: profanity filtered")
+            print("Chicken Challenge: profanity filtered")
 
-        print("Communication Game: name entered:", result)
+        print("Chicken Challenge: name entered:", result)
         return result
 
     # ----- question / answer flow ----------------------------------------
@@ -480,7 +480,7 @@ class AacTrainer(Subprogram):
         ]
         self._path_pos = 0
 
-        print("Communication Game: Q{}/{} prompt={} path={}".format(
+        print("Chicken Challenge: Q{}/{} prompt={} path={}".format(
             idx + 1, self._round_count, prompt, self._current_path))
 
         self._nav_stack = []
@@ -506,7 +506,7 @@ class AacTrainer(Subprogram):
 
         expected = (self._current_path[self._path_pos]
                     if self._path_pos < len(self._current_path) else None)
-        print("Communication Game: selected {} (expected {} at step {}/{})".format(
+        print("Chicken Challenge: selected {} (expected {} at step {}/{})".format(
             selected_id, expected, self._path_pos + 1,
             len(self._current_path)))
 
@@ -519,7 +519,7 @@ class AacTrainer(Subprogram):
                 if submenu and not str(submenu).endswith(".py"):
                     self._load_menu(str(submenu))
                 else:
-                    print("Communication Game: path expects submenu but item "
+                    print("Chicken Challenge: path expects submenu but item "
                           "'{}' has none".format(selected_id))
                     self._finalize_answer(selected, correct=False)
         else:
@@ -579,11 +579,11 @@ class AacTrainer(Subprogram):
         menu_path = menus_dir + "/" + menu_file
         if self.storage:
             menu_path = self.storage.resolve_path(menu_path)
-        print("Communication Game: load menu:", menu_path)
+        print("Chicken Challenge: load menu:", menu_path)
         try:
             header, items = parse_menu_file(menu_path)
         except Exception as e:
-            print("Communication Game: cannot load", menu_path, ":", e)
+            print("Chicken Challenge: cannot load", menu_path, ":", e)
             header = {}
             items = []
         self._items = items
@@ -648,7 +648,7 @@ class AacTrainer(Subprogram):
         try:
             self.audio.play(self._resolve(path))
         except Exception as e:
-            print("Communication Game: sound error:", e)
+            print("Chicken Challenge: sound error:", e)
         dur = time.monotonic() - speak_start
         self._run_start += dur
 
