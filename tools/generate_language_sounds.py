@@ -25,67 +25,67 @@ except ImportError:
 # Words: {english_key: native_word}
 LANGUAGES = [
     ("th", "th", "Thai", "ไทย", {
-        "milk": "นม", "water": "น้ำ", "snack": "ขนม",
+        "tired": "เหนื่อย", "happy": "มีความสุข", "snack": "ขนม",
         "play": "เล่น", "mum": "แม่", "yes": "ใช่",
         "no": "ไม่ใช่", "thankyou": "ขอบคุณ",
     }),
     ("ja", "ja", "Japanese", "日本語", {
-        "milk": "牛乳", "water": "お水", "snack": "おやつ",
+        "tired": "疲れた", "happy": "嬉しい", "snack": "おやつ",
         "play": "遊ぶ", "mum": "ママ", "yes": "はい",
         "no": "いいえ", "thankyou": "ありがとう",
     }),
     ("en", "en", "English", "English", {
-        "milk": "milk", "water": "water", "snack": "snack",
+        "tired": "tired", "happy": "happy", "snack": "snack",
         "play": "play", "mum": "mum", "yes": "yes",
         "no": "no", "thankyou": "thank you",
     }),
     ("zh", "zh-cn", "Mandarin", "中文", {
-        "milk": "牛奶", "water": "水", "snack": "零食",
+        "tired": "累", "happy": "开心", "snack": "零食",
         "play": "玩", "mum": "妈妈", "yes": "是",
         "no": "不是", "thankyou": "谢谢",
     }),
     ("hi", "hi", "Hindi", "हिन्दी", {
-        "milk": "दूध", "water": "पानी", "snack": "नाश्ता",
+        "tired": "थका हुआ", "happy": "खुश", "snack": "नाश्ता",
         "play": "खेलो", "mum": "माँ", "yes": "हाँ",
         "no": "नहीं", "thankyou": "धन्यवाद",
     }),
     ("es", "es", "Spanish", "Español", {
-        "milk": "leche", "water": "agua", "snack": "merienda",
+        "tired": "cansado", "happy": "feliz", "snack": "merienda",
         "play": "jugar", "mum": "mamá", "yes": "sí",
         "no": "no", "thankyou": "gracias",
     }),
     ("fr", "fr", "French", "Français", {
-        "milk": "lait", "water": "eau", "snack": "goûter",
+        "tired": "fatigué", "happy": "content", "snack": "goûter",
         "play": "jouer", "mum": "maman", "yes": "oui",
         "no": "non", "thankyou": "merci",
     }),
     ("ar", "ar", "Arabic", "العربية", {
-        "milk": "حليب", "water": "ماء", "snack": "وجبة",
+        "tired": "متعب", "happy": "سعيد", "snack": "وجبة",
         "play": "لعب", "mum": "ماما", "yes": "نعم",
         "no": "لا", "thankyou": "شكراً",
     }),
     ("bn", "bn", "Bengali", "বাংলা", {
-        "milk": "দুধ", "water": "জল", "snack": "নাস্তা",
+        "tired": "ক্লান্ত", "happy": "খুশি", "snack": "নাস্তা",
         "play": "খেলা", "mum": "মা", "yes": "হ্যাঁ",
         "no": "না", "thankyou": "ধন্যবাদ",
     }),
     ("pt", "pt", "Portuguese", "Português", {
-        "milk": "leite", "water": "água", "snack": "lanche",
+        "tired": "cansado", "happy": "feliz", "snack": "lanche",
         "play": "brincar", "mum": "mamãe", "yes": "sim",
         "no": "não", "thankyou": "obrigado",
     }),
     ("ru", "ru", "Russian", "Русский", {
-        "milk": "молоко", "water": "вода", "snack": "перекус",
+        "tired": "усталый", "happy": "счастливый", "snack": "перекус",
         "play": "играть", "mum": "мама", "yes": "да",
         "no": "нет", "thankyou": "спасибо",
     }),
     ("cs", "cs", "Czech", "Čeština", {
-        "milk": "mléko", "water": "voda", "snack": "svačina",
+        "tired": "unavený", "happy": "šťastný", "snack": "svačina",
         "play": "hrát", "mum": "máma", "yes": "ano",
         "no": "ne", "thankyou": "děkuji",
     }),
     ("de", "de", "German", "Deutsch", {
-        "milk": "Milch", "water": "Wasser", "snack": "Snack",
+        "tired": "müde", "happy": "glücklich", "snack": "Snack",
         "play": "spielen", "mum": "Mama", "yes": "ja",
         "no": "nein", "thankyou": "danke",
     }),

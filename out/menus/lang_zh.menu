@@ -20,58 +20,58 @@ columns = 4
 rows = 2
 background = /lcd_images/0_needs_small_unc.bmp
 
-[milk]
-label = Milk
-text_description = Milk / 牛奶
+[tired]
+label = Tired
+text_description = Tired / 累
 image = /lcd_images/8_Icons-01.bmp
-sound = /button_sounds/languages/zh/milk_牛奶.wav
+sound = /sounds/zh/tired.wav
 position = 1
 
-[water]
-label = Water
-text_description = Water / 水
+[happy]
+label = Happy
+text_description = Happy / 开心
 image = /lcd_images/8_Icons-02.bmp
-sound = /button_sounds/languages/zh/water_水.wav
+sound = /sounds/zh/happy.wav
 position = 2
 
 [snack]
 label = Snack
 text_description = Snack / 零食
 image = /lcd_images/8_Icons-03.bmp
-sound = /button_sounds/languages/zh/snack_零食.wav
+sound = /sounds/zh/snack.wav
 position = 3
 
 [play]
 label = Play
 text_description = Play / 玩
 image = /lcd_images/8_Icons-04.bmp
-sound = /button_sounds/languages/zh/play_玩.wav
+sound = /sounds/zh/play.wav
 position = 4
 
 [mum]
 label = Mum
 text_description = Mum / 妈妈
 image = /lcd_images/8_Icons-05.bmp
-sound = /button_sounds/languages/zh/mum_妈妈.wav
+sound = /sounds/zh/mum.wav
 position = 5
 
 [yes]
 label = Yes
 text_description = Yes / 是
 image = /lcd_images/8_Icons-06.bmp
-sound = /button_sounds/languages/zh/yes_是.wav
+sound = /sounds/zh/yes.wav
 position = 6
 
 [no]
 label = No
 text_description = No / 不是
 image = /lcd_images/8_Icons-07.bmp
-sound = /button_sounds/languages/zh/no_不是.wav
+sound = /sounds/zh/no.wav
 position = 7
 
 [thankyou]
 label = Thank You
 text_description = Thank You / 谢谢
 image = /lcd_images/8_Icons-08.bmp
-sound = /button_sounds/languages/zh/thankyou_谢谢.wav
+sound = /sounds/zh/thankyou.wav
 position = 8

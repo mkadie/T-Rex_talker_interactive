@@ -73,7 +73,13 @@ PROMPTS = [
     ("try_again.mp3", "Not quite — try again."),
     ("finished.mp3",  "Great job! You finished the round."),
 
-    # --- 5 direct answers from base_fruitjam.menu ---
+    # --- 7 direct answers from the base page ---
+    ("you_were_awake_all_night.mp3",
+     "You were awake all night and can barely keep your eyes open. "
+     "You want to say?"),
+    ("you_got_the_best_present.mp3",
+     "You just got the best present ever and you feel wonderful. "
+     "You want to say?"),
     ("someone_held_the_door.mp3",
      "Someone just held the door open for you. What do you want to say?"),
     ("bad_smell_making_me_angry.mp3",
@@ -85,9 +91,13 @@ PROMPTS = [
     ("want_to_eat_broccoli.mp3",
      "Mom asked if you want to eat broccoli for dessert. You want to say?"),
 
-    # --- 5 food answers, reached via the "more" button ---
+    # --- 7 food answers, reached via the "more" button ---
     ("im_thirsty_want_water.mp3",
      "I'm thirsty and I want a glass of water."),
+    ("want_a_cup_of_orange_juice.mp3",
+     "I want a cold cup of orange juice."),
+    ("want_a_creamy_cup_of_yogurt.mp3",
+     "I want a creamy cup of yogurt."),
     ("want_a_crunchy_red_apple.mp3",
      "I want to eat a crunchy red apple."),
     ("want_a_cold_glass_of_milk.mp3",

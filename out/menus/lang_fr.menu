@@ -20,58 +20,58 @@ columns = 4
 rows = 2
 background = /lcd_images/0_needs_small_unc.bmp
 
-[milk]
-label = Milk
-text_description = Milk / lait
+[tired]
+label = Tired
+text_description = Tired / fatigué
 image = /lcd_images/8_Icons-01.bmp
-sound = /button_sounds/languages/fr/milk_lait.wav
+sound = /sounds/fr/tired.wav
 position = 1
 
-[water]
-label = Water
-text_description = Water / eau
+[happy]
+label = Happy
+text_description = Happy / content
 image = /lcd_images/8_Icons-02.bmp
-sound = /button_sounds/languages/fr/water_eau.wav
+sound = /sounds/fr/happy.wav
 position = 2
 
 [snack]
 label = Snack
 text_description = Snack / goûter
 image = /lcd_images/8_Icons-03.bmp
-sound = /button_sounds/languages/fr/snack_goûter.wav
+sound = /sounds/fr/snack.wav
 position = 3
 
 [play]
 label = Play
 text_description = Play / jouer
 image = /lcd_images/8_Icons-04.bmp
-sound = /button_sounds/languages/fr/play_jouer.wav
+sound = /sounds/fr/play.wav
 position = 4
 
 [mum]
 label = Mum
 text_description = Mum / maman
 image = /lcd_images/8_Icons-05.bmp
-sound = /button_sounds/languages/fr/mum_maman.wav
+sound = /sounds/fr/mum.wav
 position = 5
 
 [yes]
 label = Yes
 text_description = Yes / oui
 image = /lcd_images/8_Icons-06.bmp
-sound = /button_sounds/languages/fr/yes_oui.wav
+sound = /sounds/fr/yes.wav
 position = 6
 
 [no]
 label = No
 text_description = No / non
 image = /lcd_images/8_Icons-07.bmp
-sound = /button_sounds/languages/fr/no_non.wav
+sound = /sounds/fr/no.wav
 position = 7
 
 [thankyou]
 label = Thank You
 text_description = Thank You / merci
 image = /lcd_images/8_Icons-08.bmp
-sound = /button_sounds/languages/fr/thankyou_merci.wav
+sound = /sounds/fr/thankyou.wav
 position = 8

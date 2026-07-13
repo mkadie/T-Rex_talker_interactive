@@ -20,58 +20,58 @@ columns = 4
 rows = 2
 background = /lcd_images/0_needs_small_unc.bmp
 
-[milk]
-label = Milk
-text_description = Milk / 牛乳
+[tired]
+label = Tired
+text_description = Tired / 疲れた
 image = /lcd_images/8_Icons-01.bmp
-sound = /button_sounds/languages/ja/milk_牛乳.wav
+sound = /sounds/ja/tired.wav
 position = 1
 
-[water]
-label = Water
-text_description = Water / お水
+[happy]
+label = Happy
+text_description = Happy / 嬉しい
 image = /lcd_images/8_Icons-02.bmp
-sound = /button_sounds/languages/ja/water_お水.wav
+sound = /sounds/ja/happy.wav
 position = 2
 
 [snack]
 label = Snack
 text_description = Snack / おやつ
 image = /lcd_images/8_Icons-03.bmp
-sound = /button_sounds/languages/ja/snack_おやつ.wav
+sound = /sounds/ja/snack.wav
 position = 3
 
 [play]
 label = Play
 text_description = Play / 遊ぶ
 image = /lcd_images/8_Icons-04.bmp
-sound = /button_sounds/languages/ja/play_遊ぶ.wav
+sound = /sounds/ja/play.wav
 position = 4
 
 [mum]
 label = Mum
 text_description = Mum / ママ
 image = /lcd_images/8_Icons-05.bmp
-sound = /button_sounds/languages/ja/mum_ママ.wav
+sound = /sounds/ja/mum.wav
 position = 5
 
 [yes]
 label = Yes
 text_description = Yes / はい
 image = /lcd_images/8_Icons-06.bmp
-sound = /button_sounds/languages/ja/yes_はい.wav
+sound = /sounds/ja/yes.wav
 position = 6
 
 [no]
 label = No
 text_description = No / いいえ
 image = /lcd_images/8_Icons-07.bmp
-sound = /button_sounds/languages/ja/no_いいえ.wav
+sound = /sounds/ja/no.wav
 position = 7
 
 [thankyou]
 label = Thank You
 text_description = Thank You / ありがとう
 image = /lcd_images/8_Icons-08.bmp
-sound = /button_sounds/languages/ja/thankyou_ありがとう.wav
+sound = /sounds/ja/thankyou.wav
 position = 8

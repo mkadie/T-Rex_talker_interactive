@@ -20,58 +20,58 @@ columns = 4
 rows = 2
 background = /lcd_images/0_needs_small_unc.bmp
 
-[milk]
-label = Milk
-text_description = Milk / mléko
+[tired]
+label = Tired
+text_description = Tired / unavený
 image = /lcd_images/8_Icons-01.bmp
-sound = /button_sounds/languages/cs/milk_mléko.wav
+sound = /sounds/cs/tired.wav
 position = 1
 
-[water]
-label = Water
-text_description = Water / voda
+[happy]
+label = Happy
+text_description = Happy / šťastný
 image = /lcd_images/8_Icons-02.bmp
-sound = /button_sounds/languages/cs/water_voda.wav
+sound = /sounds/cs/happy.wav
 position = 2
 
 [snack]
 label = Snack
 text_description = Snack / svačina
 image = /lcd_images/8_Icons-03.bmp
-sound = /button_sounds/languages/cs/snack_svačina.wav
+sound = /sounds/cs/snack.wav
 position = 3
 
 [play]
 label = Play
 text_description = Play / hrát
 image = /lcd_images/8_Icons-04.bmp
-sound = /button_sounds/languages/cs/play_hrát.wav
+sound = /sounds/cs/play.wav
 position = 4
 
 [mum]
 label = Mum
 text_description = Mum / máma
 image = /lcd_images/8_Icons-05.bmp
-sound = /button_sounds/languages/cs/mum_máma.wav
+sound = /sounds/cs/mum.wav
 position = 5
 
 [yes]
 label = Yes
 text_description = Yes / ano
 image = /lcd_images/8_Icons-06.bmp
-sound = /button_sounds/languages/cs/yes_ano.wav
+sound = /sounds/cs/yes.wav
 position = 6
 
 [no]
 label = No
 text_description = No / ne
 image = /lcd_images/8_Icons-07.bmp
-sound = /button_sounds/languages/cs/no_ne.wav
+sound = /sounds/cs/no.wav
 position = 7
 
 [thankyou]
 label = Thank You
 text_description = Thank You / děkuji
 image = /lcd_images/8_Icons-08.bmp
-sound = /button_sounds/languages/cs/thankyou_děkuji.wav
+sound = /sounds/cs/thankyou.wav
 position = 8

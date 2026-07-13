@@ -20,58 +20,58 @@ columns = 4
 rows = 2
 background = /lcd_images/0_needs_small_unc.bmp
 
-[milk]
-label = Milk
-text_description = Milk / حليب
+[tired]
+label = Tired
+text_description = Tired / متعب
 image = /lcd_images/8_Icons-01.bmp
-sound = /button_sounds/languages/ar/milk_حليب.wav
+sound = /sounds/ar/tired.wav
 position = 1
 
-[water]
-label = Water
-text_description = Water / ماء
+[happy]
+label = Happy
+text_description = Happy / سعيد
 image = /lcd_images/8_Icons-02.bmp
-sound = /button_sounds/languages/ar/water_ماء.wav
+sound = /sounds/ar/happy.wav
 position = 2
 
 [snack]
 label = Snack
 text_description = Snack / وجبة
 image = /lcd_images/8_Icons-03.bmp
-sound = /button_sounds/languages/ar/snack_وجبة.wav
+sound = /sounds/ar/snack.wav
 position = 3
 
 [play]
 label = Play
 text_description = Play / لعب
 image = /lcd_images/8_Icons-04.bmp
-sound = /button_sounds/languages/ar/play_لعب.wav
+sound = /sounds/ar/play.wav
 position = 4
 
 [mum]
 label = Mum
 text_description = Mum / ماما
 image = /lcd_images/8_Icons-05.bmp
-sound = /button_sounds/languages/ar/mum_ماما.wav
+sound = /sounds/ar/mum.wav
 position = 5
 
 [yes]
 label = Yes
 text_description = Yes / نعم
 image = /lcd_images/8_Icons-06.bmp
-sound = /button_sounds/languages/ar/yes_نعم.wav
+sound = /sounds/ar/yes.wav
 position = 6
 
 [no]
 label = No
 text_description = No / لا
 image = /lcd_images/8_Icons-07.bmp
-sound = /button_sounds/languages/ar/no_لا.wav
+sound = /sounds/ar/no.wav
 position = 7
 
 [thankyou]
 label = Thank You
 text_description = Thank You / شكراً
 image = /lcd_images/8_Icons-08.bmp
-sound = /button_sounds/languages/ar/thankyou_شكراً.wav
+sound = /sounds/ar/thankyou.wav
 position = 8

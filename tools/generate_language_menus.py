@@ -18,8 +18,8 @@ from generate_language_sounds import LANGUAGES
 
 # Button layout: position, id, label, image path
 BUTTONS = [
-    (1, "milk",     "Milk",      "/lcd_images/8_Icons-01.bmp"),
-    (2, "water",    "Water",     "/lcd_images/8_Icons-02.bmp"),
+    (1, "tired",    "Tired",     "/lcd_images/8_Icons-01.bmp"),
+    (2, "happy",    "Happy",     "/lcd_images/8_Icons-02.bmp"),
     (3, "snack",    "Snack",     "/lcd_images/8_Icons-03.bmp"),
     (4, "play",     "Play",      "/lcd_images/8_Icons-04.bmp"),
     (5, "mum",      "Mum",      "/lcd_images/8_Icons-05.bmp"),
@@ -68,19 +68,11 @@ def generate_menu(lang_code, en_name, native_name, words, out_dir):
     for pos, btn_id, label, image in BUTTONS:
         native_word = words[btn_id]
 
-        if lang_code == "th":
-            # Thai uses existing Moana WAV files
-            sound_path = "/button_sounds/{}_{}.wav".format(btn_id, native_word)
-            # Special cases for Moana's naming
-            if btn_id == "play":
-                sound_path = "/button_sounds/play_Pim_เล่น.wav"
-            elif btn_id == "thankyou":
-                sound_path = "/button_sounds/ThankYou_ขอบคุณ.wav"
-        elif lang_code == "en":
-            sound_path = "/button_sounds/languages/en/{}.wav".format(btn_id)
-        else:
-            sound_path = "/button_sounds/languages/{}/{}_{}.wav".format(
-                lang_code, btn_id, native_word)
+        # All languages read from the on-device word-indexed audio tree
+        # /sounds/<code>/<word>.wav (the tree the 13-language pack ships
+        # populated). Uniform, word-only names — no per-language suffix,
+        # no separate /button_sounds/languages tree to keep in sync.
+        sound_path = "/sounds/{}/{}.wav".format(lang_code, btn_id)
 
         content += BUTTON_TEMPLATE.format(
             btn_id=btn_id,

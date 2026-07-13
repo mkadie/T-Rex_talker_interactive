@@ -29,6 +29,8 @@ DEFAULT_HOLD_FIRST_MS = 450
 DEFAULT_HOLD_MIN_MS = 60
 DEFAULT_HOLD_DECAY = 0.85
 DEFAULT_RANDOMIZE = True
+LANG_SELECT_TIMEOUT = 5    # seconds of no scrolling before the language is
+                           # announced (spoken in that language)
 HISCORE_FILE = "/sd/hiscores.txt"
 MAX_HISCORES = 3
 NAME_LENGTH = 5
@@ -53,6 +55,19 @@ def _is_profane(name):
         if word in upper:
             return True
     return False
+
+
+# Languages the start / end screens cycle through with BUTTON1. The code
+# selects the /sounds/game/<code>/ audio tree; the English name is shown
+# on-screen so a non-reader can see which language is active. English uses
+# its existing on-flash prompt assets, so the game still runs with no SD.
+LANGS = [
+    ("en", "English"), ("th", "Thai"), ("cs", "Czech"),
+    ("ja", "Japanese"), ("zh", "Mandarin"), ("hi", "Hindi"),
+    ("es", "Spanish"), ("fr", "French"), ("ar", "Arabic"),
+    ("bn", "Bengali"), ("pt", "Portuguese"), ("ru", "Russian"),
+    ("de", "German"),
+]
 
 
 class AacTrainer(Subprogram):
@@ -89,8 +104,24 @@ class AacTrainer(Subprogram):
             self._done = True
             return
 
-        if self._round_count > len(self._questions):
-            self._round_count = len(self._questions)
+        # Partition targets into page 1 (base menu, direct answers) and
+        # page 2 (food items reached via "more"), by whether the answer
+        # path descends through a submenu. Each target is chosen by
+        # drawing a page (first_page_bias) then a uniform item on it, so
+        # a round may ask more questions than there are sections.
+        self._page1 = [q for q in self._questions
+                       if "/" not in str(q.get("answer", ""))]
+        self._page2 = [q for q in self._questions
+                       if "/" in str(q.get("answer", ""))]
+        self._first_page_bias = float(hdr.get("first_page_bias", 0.75))
+        self._asked = set()   # question ids already asked this round
+
+        # Language state — BUTTON1/BUTTON3 cycle this on the start/end
+        # screens; the active code drives which audio tree is played.
+        self._lang_idx = 0
+        self._lang = LANGS[0][0]
+        self._lang_label = None
+        self._btn_prev = [True, True, True]  # onboard buttons, active-low
 
         if self._randomize and random is not None:
             try:
@@ -131,7 +162,7 @@ class AacTrainer(Subprogram):
         self._run_start = time.monotonic()
         self._show_start_screen()
         self.set_status((0, 128, 255))
-        self._say(self._intro_sound)
+        self._say(self._lang_prompt(self._intro_sound), block=False)
         self._wait_for_button()
         self._run_start = time.monotonic()
         self._ask(self._round_index)
@@ -178,7 +209,8 @@ class AacTrainer(Subprogram):
         total = elapsed + self._score_sec
         print("Chicken Challenge: run finished in {:.1f}s "
               "(wrong: {})".format(total, self._wrong_count))
-        self._say(self._done_sound)
+        self._show_full_screen("finished")
+        self._say(self._lang_prompt(self._done_sound))
 
         rank = self._get_rank(total)
         if rank is not None:
@@ -190,7 +222,7 @@ class AacTrainer(Subprogram):
         """Reset state and show start screen for a new round."""
         self._hiscores = self._load_hiscores()
         self._show_start_screen()
-        self._say(self._intro_sound)
+        self._say(self._lang_prompt(self._intro_sound), block=False)
         self._wait_for_button()
 
         # Re-shuffle questions
@@ -205,6 +237,7 @@ class AacTrainer(Subprogram):
         self._score_sec = 0.0
         self._wrong_count = 0
         self._round_index = 0
+        self._asked = set()
         self._done = False
         self._run_start = time.monotonic()
         self._ask(self._round_index)
@@ -265,66 +298,61 @@ class AacTrainer(Subprogram):
     # ----- start screen with high scores ---------------------------------
 
     def _show_start_screen(self):
-        """Show title screen with top 3 high scores. Minimal objects."""
+        """Put up the active language's pre-rendered title screen
+        (/sd/screens/<lang>/title.bmp) with the top-3 times overlaid as
+        ASCII digits (the built-in font handles numbers and A-Z names)."""
         import gc
-        gc.collect()
         import displayio
+
+        # Drop the previous screen first so its OnDiskBitmap file handle is
+        # freed before we open the next image, then collect.
         try:
-            from adafruit_display_text import label
-            import terminalio
-        except ImportError:
-            return
+            self.display._display.root_group = displayio.Group()
+        except Exception:
+            pass
+        gc.collect()
 
         w = self.display._width
         h = self.display._height
-
         group = displayio.Group()
 
-        # Black background
-        bg = displayio.Bitmap(w, h, 1)
-        pal = displayio.Palette(1)
-        pal[0] = 0x000000
-        group.append(displayio.TileGrid(bg, pixel_shader=pal))
+        try:
+            import adafruit_imageload
+            bmp, shader = adafruit_imageload.load(self._screen_path("title"))
+            group.append(displayio.TileGrid(bmp, pixel_shader=shader))
+        except Exception as e:
+            print("Chicken Challenge: title screen missing:", e)
+            bg = displayio.Bitmap(w, h, 1)
+            pal = displayio.Palette(1)
+            pal[0] = 0x000000
+            group.append(displayio.TileGrid(bg, pixel_shader=pal))
 
-        # Title — single label
-        title_lbl = label.Label(
-            terminalio.FONT,
-            text="T-Rex's Rubber\nChicken Challenge",
-            color=0xFFFF00,
-            scale=2,
-            anchor_point=(0.5, 0.0),
-            anchored_position=(w // 2, 12),
-        )
-        group.append(title_lbl)
-
-        # Build scores as single text block
+        # Dynamic high scores overlaid (ASCII) in the mid gap of the image.
         if self._hiscores:
-            lines = ["-- BEST TIMES --"]
-            for i, (secs, name) in enumerate(self._hiscores):
-                lines.append("{}. {} {}".format(
-                    i + 1, self._format_time(secs), name))
-            scores_lbl = label.Label(
-                terminalio.FONT,
-                text="\n".join(lines),
-                color=0x00FF00,
-                scale=2,
-                anchor_point=(0.5, 0.5),
-                anchored_position=(w // 2, h // 2 + 10),
-            )
-            group.append(scores_lbl)
-
-        # Hint
-        hint_lbl = label.Label(
-            terminalio.FONT,
-            text="Press button to start",
-            color=0xAAAAAA,
-            scale=2,
-            anchor_point=(0.5, 1.0),
-            anchored_position=(w // 2, h - 10),
-        )
-        group.append(hint_lbl)
+            try:
+                from adafruit_display_text import label
+                import terminalio
+                lines = []
+                for i, (secs, name) in enumerate(self._hiscores):
+                    lines.append("{}. {} {}".format(
+                        i + 1, self._format_time(secs), name))
+                scores_lbl = label.Label(
+                    terminalio.FONT, text="\n".join(lines),
+                    color=0x00FF00, scale=1,
+                    anchor_point=(0.5, 1.0),
+                    anchored_position=(w // 2, h - 4),
+                )
+                group.append(scores_lbl)
+            except ImportError:
+                pass
 
         self.display._display.root_group = group
+        # Draw the image now, before any audio streams from the SD, so the
+        # title can't render blank while a sound is being read.
+        try:
+            self.display._display.refresh()
+        except Exception:
+            pass
         self._showing_score = True
 
     def _dismiss_score_screen(self):
@@ -333,11 +361,117 @@ class AacTrainer(Subprogram):
             self._showing_score = False
 
     def _wait_for_button(self):
+        """Hold on the start/end screen until start. The onboard buttons
+        are read directly (so BUTTON1 can't be confused with a keyboard
+        select): BUTTON1 -> next language, BUTTON3 -> previous language,
+        BUTTON2 -> start. A keyboard/puff/chicken press also starts (only
+        counted when no onboard button is held, so a held BUTTON1 press
+        surfaced by poll() doesn't trip the start)."""
+        self._btn_prev = [self._btn_raw(i) for i in range(3)]
+        scroll_at = None       # monotonic time of the last language change
+        announced = True       # has the current language been spoken yet?
         while True:
-            press = self.input.poll()
-            if press is not None:
+            if self._btn_edge(0):
+                self._cycle_language(+1)
+                scroll_at = time.monotonic()
+                announced = False
+                continue
+            if self._btn_edge(2):
+                self._cycle_language(-1)
+                scroll_at = time.monotonic()
+                announced = False
+                continue
+            if self._btn_edge(1):
                 break
-            time.sleep(0.05)
+            # Once scrolling stops for LANG_SELECT_TIMEOUT, announce the
+            # chosen language (its name spoken in that language). Nothing is
+            # said while the player is still scrolling.
+            if (not announced and scroll_at is not None
+                    and time.monotonic() - scroll_at >= LANG_SELECT_TIMEOUT):
+                self._announce_language()
+                announced = True
+            press = self.input.poll()
+            if press is not None and not any(self._btn_raw(i) for i in range(3)):
+                break
+            time.sleep(0.01)
+
+    def _announce_language(self):
+        """Speak the selected language's name in that language."""
+        self._say("/sd/sounds/game/%s/langname.wav" % self._lang)
+
+    # ----- onboard buttons + language cycling ----------------------------
+
+    def _btn_raw(self, i):
+        """True if onboard button i is currently pressed (active-low)."""
+        db = getattr(self.input, "_direct_buttons", None)
+        if not db or i >= len(db):
+            return False
+        try:
+            v = db[i].value
+        except Exception:
+            return False
+        active_low = getattr(self.input, "_direct_active_low", True)
+        return (not v) if active_low else v
+
+    def _btn_edge(self, i):
+        """True once, on the press (rising) edge of onboard button i."""
+        now = self._btn_raw(i)
+        prev = self._btn_prev[i] if i < len(self._btn_prev) else False
+        if i < len(self._btn_prev):
+            self._btn_prev[i] = now
+        return now and not prev
+
+    def _lang_name(self):
+        return "Lang: " + LANGS[self._lang_idx][1]
+
+    def _cycle_language(self, delta):
+        self._lang_idx = (self._lang_idx + delta) % len(LANGS)
+        self._lang = LANGS[self._lang_idx][0]
+        print("Chicken Challenge: language ->", self._lang)
+        # Swap to the new language's pre-rendered title screen. No audio
+        # here — the name is announced once scrolling stops so we never
+        # read an image and stream a sound off the SD at the same time.
+        if self._showing_score:
+            self._show_start_screen()
+
+    def _screen_path(self, name):
+        """Path to a pre-rendered screen image for the active language."""
+        return "/sd/screens/%s/%s.bmp" % (self._lang, name)
+
+    def _show_full_screen(self, name):
+        """Put up a pre-rendered full-screen image for the active language."""
+        import displayio
+        try:
+            import adafruit_imageload
+            bmp, shader = adafruit_imageload.load(self._screen_path(name))
+            g = displayio.Group()
+            g.append(displayio.TileGrid(bmp, pixel_shader=shader))
+            self.display._display.root_group = g
+            try:
+                self.display._display.refresh()
+            except Exception:
+                pass
+            self._showing_score = True
+        except Exception as e:
+            print("Chicken Challenge: screen missing", name, e)
+
+    def _lang_prompt(self, path):
+        """Map a trainer prompt/framing path to the active language, read
+        from the SD card's /sd/sounds/game tree. English keeps its
+        existing on-flash asset so it runs with no SD."""
+        if self._lang == "en" or not path:
+            return path
+        stem = path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+        return "/sd/sounds/game/%s/prompts/%s.wav" % (self._lang, stem)
+
+    def _lang_word(self, item_id, cfg_path):
+        """Map a selected item's word audio to the active language's SD
+        tree (/sd/sounds/game/<code>/words/<id>.wav) for every language
+        including English, whose on-flash word set is incomplete. Falls
+        back to cfg_path when the item has no id."""
+        if not item_id:
+            return cfg_path
+        return "/sd/sounds/game/%s/words/%s.wav" % (self._lang, item_id)
 
     # ----- name entry screen ---------------------------------------------
 
@@ -468,11 +602,37 @@ class AacTrainer(Subprogram):
 
     # ----- question / answer flow ----------------------------------------
 
+    def _pick_target(self):
+        """Choose the next question: page 1 with probability
+        first_page_bias (else page 2), then a uniform UNASKED item on that
+        page. No question repeats within a round until the whole pool is
+        exhausted."""
+        avail1 = [q for q in self._page1 if id(q) not in self._asked]
+        avail2 = [q for q in self._page2 if id(q) not in self._asked]
+        if not avail1 and not avail2:      # pool exhausted — allow reuse
+            self._asked = set()
+            avail1, avail2 = list(self._page1), list(self._page2)
+        if random is None:
+            page = avail1 or avail2
+            q = page[0] if page else None
+        else:
+            if avail1 and (not avail2 or random.random() < self._first_page_bias):
+                page = avail1
+            else:
+                page = avail2 or avail1
+            q = random.choice(page) if page else None
+        if q is not None:
+            self._asked.add(id(q))
+        return q
+
     def _ask(self, idx):
         if self._showing_score:
             self._dismiss_score_screen()
 
-        q = self._questions[idx]
+        q = self._pick_target()
+        if q is None:
+            self._done = True
+            return
         prompt = q.get("prompt")
         raw_answer = str(q.get("answer", ""))
         self._current_path = [
@@ -487,7 +647,9 @@ class AacTrainer(Subprogram):
         self._load_menu(self._answer_menu_file)
 
         if prompt:
-            self._say(prompt)
+            # Non-blocking so the player can navigate and answer while the
+            # question is still being spoken (keeps input responsive).
+            self._say(self._lang_prompt(prompt), block=False)
 
     def _commit_selection(self):
         if self._round_index >= self._round_count:
@@ -497,6 +659,14 @@ class AacTrainer(Subprogram):
 
         selected = self._items[self._sel_index]
         selected_id = str(selected.get("id", ""))
+
+        # Speak the item the player selected (audio confirmation of the
+        # pick), for every commit — navigation into a submenu as well as a
+        # final answer. Items with no sound (e.g. "More", "Back") stay
+        # silent. _finalize_answer then only adds the correct/wrong cue.
+        item_sound = selected.get("sound")
+        if item_sound:
+            self._say(self._lang_word(selected_id, item_sound))
 
         if "back" in selected:
             self._navigate_back()
@@ -526,16 +696,14 @@ class AacTrainer(Subprogram):
             self._finalize_answer(selected, correct=False)
 
     def _finalize_answer(self, selected, correct):
-        item_sound = selected.get("sound")
-        if item_sound:
-            self._say(self._resolve(item_sound))
-
+        # The selected item's word was already spoken in _commit_selection;
+        # here we only add the correct / wrong feedback cue.
         if correct:
             self.set_status((0, 255, 0))
-            self._say(self._correct_sound)
+            self._say(self._lang_prompt(self._correct_sound))
         else:
             self.set_status((255, 0, 0))
-            self._say(self._wrong_sound)
+            self._say(self._lang_prompt(self._wrong_sound))
             self._wrong_count += 1
             self._score_sec += self._penalty
 
@@ -561,15 +729,9 @@ class AacTrainer(Subprogram):
         self._update_item_text()
 
     def _update_item_text(self):
-        """Update the display text overlay with the selected item's description."""
-        if not self._items or self._sel_index >= len(self._items):
-            return
-        item = self._items[self._sel_index]
-        text = item.get("text_description", item.get("label", ""))
-        try:
-            self.display.set_text(text)
-        except Exception:
-            pass
+        """No-op: item labels are baked into the pre-rendered board image
+        per language, so no runtime (ASCII-only) text overlay is drawn."""
+        return
 
     # ----- menu navigation ------------------------------------------------
 
@@ -611,16 +773,30 @@ class AacTrainer(Subprogram):
         except Exception:
             pass
 
-        bg = header.get("background")
-        if bg:
-            if bg.startswith("/"):
-                bg_path = bg
-            else:
-                bg_path = menus_dir + "/" + bg
-            if self.storage:
-                bg_path = self.storage.resolve_path(bg_path)
+        # Choose exactly ONE background: the active language's pre-rendered
+        # board image if it's on the SD, else the menu's own background.
+        # A single load avoids the visible blank flash (and doubled SD read)
+        # of loading the English board and then overwriting it.
+        chosen = None
+        board = {"base.menu": "board_base",
+                 "food.menu": "board_food"}.get(menu_file)
+        if board:
+            import os as _os
+            bp = self._screen_path(board)
             try:
-                self.display.set_background(bg_path)
+                _os.stat(bp)
+                chosen = bp
+            except OSError:
+                chosen = None
+        if chosen is None:
+            bg = header.get("background")
+            if bg:
+                chosen = bg if bg.startswith("/") else menus_dir + "/" + bg
+                if self.storage:
+                    chosen = self.storage.resolve_path(chosen)
+        if chosen:
+            try:
+                self.display.set_background(chosen)
             except Exception:
                 pass
 
@@ -641,12 +817,12 @@ class AacTrainer(Subprogram):
 
     # ----- audio ----------------------------------------------------------
 
-    def _say(self, path):
+    def _say(self, path, block=True):
         if not path:
             return
         speak_start = time.monotonic()
         try:
-            self.audio.play(self._resolve(path))
+            self.audio.play(self._resolve(path), block=block)
         except Exception as e:
             print("Chicken Challenge: sound error:", e)
         dur = time.monotonic() - speak_start
