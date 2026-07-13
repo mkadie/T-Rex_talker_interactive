@@ -465,21 +465,42 @@ class InputManager:
     _KEY_A     = 0x04   # rotate to next selection (auto-repeats; see _check_keyboard)
     _KEY_S     = 0x16   # select the current item
 
+    def flush_keyboards(self):
+        """Drain buffered HID reports and clear held-key state on every
+        attached keyboard, so a press from the previous screen/question
+        can't carry into the next one."""
+        for kb in self._kbds:
+            for _ in range(8):
+                try:
+                    kb["dev"].read(kb["ep"], kb["report"], timeout=1)
+                except Exception:
+                    break
+            try:
+                kb["prev"] = set(b for b in kb["report"][2:8] if b)
+            except Exception:
+                kb["prev"] = set()
+        self._kb_held = set()
+        self._kb_repeat_interval = self._kb_repeat_first
+        self._kb_repeat_next = 0.0
+        # Resync direct GPIO buttons so a press made during the gap isn't
+        # seen as a fresh edge when polling resumes.
+        try:
+            for i, pin in enumerate(self._direct_buttons):
+                self._direct_last[i] = pin.value
+        except Exception:
+            pass
+
     def _handle_key(self, code):
         """Map an HID key code to a press event.
 
-        Arrow keys move the selected_index (matches encoder navigation).
-        Enter/Space activates the selected cell.
+        Up / Left step the selection -1, Down / Right step it +1 (a simple
+        linear scroll, so a sip-n-puff that only sends up/down/enter walks
+        the whole grid). Enter/Space activates the selected cell.
         Number keys 1..9, 0 directly activate cells 0..9 (clamped to grid).
         """
-        cols = self._config.get("button_cols", 4)
-        if code == self._KEY_UP:
-            self._move_selection(-cols)
-        elif code == self._KEY_DOWN:
-            self._move_selection(cols)
-        elif code == self._KEY_LEFT:
+        if code in (self._KEY_UP, self._KEY_LEFT):
             self._move_selection(-1)
-        elif code == self._KEY_RIGHT:
+        elif code in (self._KEY_DOWN, self._KEY_RIGHT):
             self._move_selection(1)
         elif code in (self._KEY_ENTER, self._KEY_SPACE, self._KEY_S):
             if self._debug:

@@ -157,6 +157,23 @@ class AacTrainer(Subprogram):
         self._current_path = []
         self._path_pos = 0
 
+        # Audio queue — clips are played one at a time by tick() (non-
+        # blocking) so the input loop never freezes on audio and key
+        # presses are never dropped. _audio_active_since pauses the round
+        # timer for the span audio occupies.
+        self._audio_q = []
+        self._audio_active_since = None
+        # Defer advancing the screen until the answer's audio finishes, so
+        # the board never jumps to the next question mid-speech.
+        self._pending_ask = False
+        self._pending_end = False
+
+        # Live 2-player score bar (bottom of the board). Player 2 is a
+        # placeholder until 2-player mode lands.
+        self._p1_label = None
+        self._p2_label = None
+        self._score_bar_sec = -1
+
         # Load high scores and show start screen
         self._hiscores = self._load_hiscores()
         self._run_start = time.monotonic()
@@ -172,6 +189,51 @@ class AacTrainer(Subprogram):
             # Round finished — handle end-of-round, then restart
             self._end_round()
             self._restart_round()
+            return True
+
+        # Audio gate: while a clip is playing or queued, do NOT poll input
+        # at all — nothing the player presses during the prompt / word /
+        # feedback is acted on. When the audio finishes, credit the paused
+        # round time, flush the buffered presses, and only then start
+        # responding to input again.
+        now = time.monotonic()
+        if self.audio.playing:
+            if self._audio_active_since is None:
+                self._audio_active_since = now
+            audio_active = True
+        elif self._audio_q:
+            if self._audio_active_since is None:
+                self._audio_active_since = now
+            try:
+                self.audio.play(self._audio_q.pop(0), block=False)
+            except Exception as e:
+                print("Chicken Challenge: audio error:", e)
+            audio_active = True
+        else:
+            audio_active = False
+            if self._audio_active_since is not None:
+                # The answer's word + feedback just finished speaking.
+                self._run_start += now - self._audio_active_since
+                self._audio_active_since = None
+                try:
+                    self.input.flush_keyboards()
+                except Exception:
+                    pass
+                # Now (not on the key press) advance the screen: load the
+                # next question's board, or end the round.
+                if self._pending_ask:
+                    self._pending_ask = False
+                    self._ask(self._round_index)   # updates board + queues prompt
+                    audio_active = True
+                elif self._pending_end:
+                    self._pending_end = False
+                    self._done = True
+
+        if self._done:
+            # End-of-round handled at the top of the next tick.
+            return True
+        if audio_active:
+            self._update_score_bar()
             return True
 
         press = self.input.poll()
@@ -201,6 +263,7 @@ class AacTrainer(Subprogram):
             print("Chicken Challenge: exit gesture")
             return False
 
+        self._update_score_bar()
         return True
 
     def _end_round(self):
@@ -645,11 +708,17 @@ class AacTrainer(Subprogram):
 
         self._nav_stack = []
         self._load_menu(self._answer_menu_file)
+        # Clear buffered / carried-over key presses so the previous answer's
+        # input can't bleed into this question.
+        try:
+            self.input.flush_keyboards()
+        except Exception:
+            pass
 
         if prompt:
-            # Non-blocking so the player can navigate and answer while the
-            # question is still being spoken (keeps input responsive).
-            self._say(self._lang_prompt(prompt), block=False)
+            # Queued (non-blocking) so the player can navigate and answer
+            # while the question is still being spoken.
+            self._enqueue(self._lang_prompt(prompt))
 
     def _commit_selection(self):
         if self._round_index >= self._round_count:
@@ -666,7 +735,7 @@ class AacTrainer(Subprogram):
         # silent. _finalize_answer then only adds the correct/wrong cue.
         item_sound = selected.get("sound")
         if item_sound:
-            self._say(self._lang_word(selected_id, item_sound))
+            self._enqueue(self._lang_word(selected_id, item_sound))
 
         if "back" in selected:
             self._navigate_back()
@@ -700,18 +769,20 @@ class AacTrainer(Subprogram):
         # here we only add the correct / wrong feedback cue.
         if correct:
             self.set_status((0, 255, 0))
-            self._say(self._lang_prompt(self._correct_sound))
+            self._enqueue(self._lang_prompt(self._correct_sound))
         else:
             self.set_status((255, 0, 0))
-            self._say(self._lang_prompt(self._wrong_sound))
+            self._enqueue(self._lang_prompt(self._wrong_sound))
             self._wrong_count += 1
             self._score_sec += self._penalty
 
         self._round_index += 1
+        # Don't jump the board now — wait until the word + feedback finish
+        # speaking (handled in tick's audio-finished branch).
         if self._round_index >= self._round_count:
-            self._done = True
+            self._pending_end = True
         else:
-            self._ask(self._round_index)
+            self._pending_ask = True
 
     def _move_selection(self, delta):
         if not self._items:
@@ -732,6 +803,62 @@ class AacTrainer(Subprogram):
         """No-op: item labels are baked into the pre-rendered board image
         per language, so no runtime (ASCII-only) text overlay is drawn."""
         return
+
+    def _attach_score_bar(self):
+        """(Re)attach the live 2-player score bar to the bottom of the menu
+        splash. Called after each board load because set_background rebuilds
+        the splash. It only shows while a board is the active screen."""
+        import displayio
+        try:
+            from adafruit_display_text import label
+            import terminalio
+        except ImportError:
+            return
+        splash = getattr(self.display, "_splash", None)
+        if splash is None:
+            return
+        w = self.display._width
+        h = self.display._height
+        bar_h = 24
+        bar = displayio.Bitmap(w, bar_h, 1)
+        pal = displayio.Palette(1)
+        pal[0] = 0x0A121C
+        splash.append(displayio.TileGrid(bar, pixel_shader=pal,
+                                         x=0, y=h - bar_h))
+        self._p1_label = label.Label(
+            terminalio.FONT, text="P1  0:00", color=0x33FF66, scale=2,
+            anchor_point=(0.0, 1.0), anchored_position=(6, h - 3))
+        splash.append(self._p1_label)
+        self._p2_label = label.Label(
+            terminalio.FONT, text="P2  ---", color=0x8899AA, scale=2,
+            anchor_point=(1.0, 1.0), anchored_position=(w - 6, h - 3))
+        splash.append(self._p2_label)
+        self._score_bar_sec = -1
+        self._update_score_bar(force=True)
+
+    def _update_score_bar(self, force=False):
+        """Refresh Player 1's live time (once per second). Player 2 stays a
+        placeholder until 2-player mode is added."""
+        lbl = self._p1_label
+        if lbl is None:
+            return
+        now = time.monotonic()
+        paused = (now - self._audio_active_since
+                  if self._audio_active_since is not None else 0)
+        disp = (now - self._run_start - paused) + self._score_sec
+        if disp < 0:
+            disp = 0
+        secs = int(disp)
+        if not force and secs == self._score_bar_sec:
+            return
+        self._score_bar_sec = secs
+        txt = "P1  " + self._format_time(disp)
+        if self._wrong_count:
+            txt += "  x%d" % self._wrong_count
+        try:
+            lbl.text = txt
+        except Exception:
+            pass
 
     # ----- menu navigation ------------------------------------------------
 
@@ -807,6 +934,7 @@ class AacTrainer(Subprogram):
             pass
         self._sel_index = 0
         self._update_item_text()
+        self._attach_score_bar()
 
     def _navigate_back(self):
         if len(self._nav_stack) <= 1:
@@ -816,6 +944,12 @@ class AacTrainer(Subprogram):
         self._load_menu(prev)
 
     # ----- audio ----------------------------------------------------------
+
+    def _enqueue(self, path):
+        """Queue a clip; tick() plays it non-blocking so the input loop
+        never stalls (in-game word / feedback / prompt audio)."""
+        if path:
+            self._audio_q.append(self._resolve(path))
 
     def _say(self, path, block=True):
         if not path:
