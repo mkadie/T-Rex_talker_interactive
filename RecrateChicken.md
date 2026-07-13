@@ -1,5 +1,14 @@
 # RecrateChicken.md — Maker-Faire Chicken Challenge Setup Runbook (Linux)
 
+> **Historical runbook (rotary-encoder build).** This captures the original
+> single-player Maker-Faire setup on rotary-encoder hardware. The project has
+> since moved to the **Fruit Jam DVI + USB** variant running the full
+> multilingual, **two-player** Rubber Chicken Challenge (sip-n-puff input,
+> per-language pre-rendered screens on the SD card). For the current state,
+> see the repo [README.md](./README.md), [TWO_PLAYER.md](./TWO_PLAYER.md),
+> and [documents/circuitpython_SD_writing.md](./documents/circuitpython_SD_writing.md).
+> The bring-up steps below remain useful for the encoder variant.
+
 > **You are reading this as a fresh Claude session on a Linux box.**
 > Your job: pick up the *T-Rex Talker Interactive* "Chicken Challenge"
 > AAC trainer, get it running on the user's connected CircuitPython

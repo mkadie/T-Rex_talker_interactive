@@ -81,6 +81,8 @@ apply_patch () {
 apply_patch "action.py"
 apply_patch "code.py"
 apply_patch "machine.py"
+apply_patch "input_manager.py"
+apply_patch "audio_player.py"
 apply_patch "config_reader.py"
 apply_patch "config.txt"
 apply_patch "menu_system.md"

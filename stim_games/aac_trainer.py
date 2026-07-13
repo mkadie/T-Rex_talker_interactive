@@ -1,13 +1,27 @@
 """T-Rex's Rubber Chicken Challenge (AAC communication game).
 
-Runs on top of the base AAC software. The game loads a menu of AAC
-items (by default the current start_menu), plays an audio prompt,
-and asks the player to navigate to and select the correct AAC item.
-Questions form a round; score is total time with a 30-second
-penalty per wrong answer.
+Runs on top of the base AAC software on the Fruit Jam DVI + USB variant.
+A spoken prompt describes a scenario; the player navigates the AAC board
+and selects the item that answers it (base-page answers are direct; food
+answers are reached through the "More" button). A round is `rounds`
+questions (default 6) drawn from a 14-item pool with no repeats, target
+selection page-weighted (first_page_bias). Score is total time plus a
+30 s penalty per wrong answer; a top-3 leaderboard persists to
+/sd/hiscores.txt with profanity-filtered name entry.
 
-Features a high-score leaderboard (top 3 lowest times) with name
-entry via encoder. Names are filtered for profanity.
+Two modes (toggle with `two_player` in aac_trainer.cfg):
+
+  * Single player — one cursor, base + food navigation.
+  * Two player   — P1 (yellow, Left/Right/Space, starts cell 1) vs P2
+                   (blue, Up/Down/Enter, starts cell 8) race to buzz in;
+                   first selection ends the question. Base page only.
+                   See TWO_PLAYER.md.
+
+Fully localizes into 13 languages as a "screen-swapper": each screen is
+pre-rendered per language to an image on the SD (built-in font is
+ASCII-only), and per-word / prompt audio lives on the SD too. BUTTON1 /
+BUTTON3 cycle the language on the start / end screens (BUTTON2 starts).
+Prompts play non-blocking so input stays responsive while speaking.
 """
 
 import time

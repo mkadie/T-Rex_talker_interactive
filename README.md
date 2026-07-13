@@ -57,6 +57,10 @@ T-Rex_talker_interactive/
 ├── NOTICE                        # upstream credits + MIT text for T-Rex Talker
 ├── README.md                     # this file
 ├── T-Rex_Talker_Subprogram.md    # full specification of the subprogram framework
+├── TWO_PLAYER.md                 # two-player race mode — controls, scoring
+├── MULTILINGUAL.md               # encoder language-picker pipeline
+├── documents/
+│   └── circuitpython_SD_writing.md   # host<->SD write access via boot.py remount
 │
 ├── stim_games/                   # the new framework and bundled games
 │   ├── __init__.py
@@ -65,8 +69,8 @@ T-Rex_talker_interactive/
 │   ├── cause_and_effect.py       # press-for-reward stim loop
 │   ├── bubble_pop.py             # tap spawns coloured bubbles
 │   ├── color_cycle.py            # HSV kaleidoscope with press-boost
-│   ├── aac_trainer.py            # "Chicken Challenge" AAC quiz
-│   └── aac_trainer.cfg           # 10 question/answer pairs for the trainer
+│   ├── aac_trainer.py            # "Rubber Chicken Challenge" quiz (1- & 2-player)
+│   └── aac_trainer.cfg           # 14 question/answer pairs + two_player toggle
 │
 ├── menus/                        # drop into /menus/ on the device
 │   ├── games.menu                # picker for all bundled games
@@ -76,12 +80,19 @@ T-Rex_talker_interactive/
 ├── tools/
 │   ├── fetch_license.sh          # pull the canonical PolyForm text into LICENSE
 │   ├── fetch_license.ps1         # same, PowerShell version
-│   └── make_trainer_sounds.py    # host-side TTS generator for trainer prompts
+│   ├── make_trainer_sounds.py    # English trainer prompt/feedback TTS
+│   ├── generate_game_i18n.py     # 13-language word + prompt WAVs (translate + TTS)
+│   ├── generate_screens.py       # 13-language pre-rendered screen BMPs
+│   ├── generate_board_art.py     # English flash board images (emoji tiles)
+│   └── generate_language_*.py    # encoder-picker sounds / menus / banner images
 │
 ├── upstream_patches/             # modified T-Rex Talker files (MIT + mods)
 │   ├── README.md                 # explains the dual-license boundary
 │   ├── action.py                 # adds subprogram dispatch
+│   ├── code.py                   # entry point with subprogram boot support
 │   ├── machine.py                # adds _launch_subprogram() and mode= boot
+│   ├── input_manager.py          # multi-keyboard polling + generic-HID sip-n-puff
+│   ├── audio_player.py           # non-blocking playback (block=False)
 │   ├── config_reader.py          # adds "mode" to the allowlist
 │   ├── config.txt                # adds commented mode example
 │   └── menu_system.md            # doc updates for subprogram syntax
@@ -145,7 +156,7 @@ The installer will:
 2. Copy `menus/*.menu` into `<target>/menus/`.
 3. Copy `tools/make_trainer_sounds.py` into `<target>/tools/`.
 4. Copy `T-Rex_Talker_Subprogram.md` into `<target>/`.
-5. Overwrite the five files in `upstream_patches/` onto their
+5. Overwrite the eight patched files in `upstream_patches/` onto their
    counterparts in `<target>/`, backing each original up as
    `<file>.pre_interactive.bak`.
 
@@ -256,6 +267,19 @@ board word) with no repeats in a round. Target selection is page-weighted —
 words come up ~3× as often. Configure via `stim_games/aac_trainer.cfg`
 (`rounds`, `first_page_bias`, `penalty_seconds`, …).
 
+### Two-player race mode
+
+Set `two_player = true` (the default) for a real-time head-to-head race:
+**P1** drives a yellow cursor (Left / Right / **Space**, starts cell 1),
+**P2** a blue cursor (Up / Down / **Enter**, starts cell 8). Both hear the
+same prompt, then race — the **first buzz-in ends the question**. Time is
+shared; a 30 s penalty lands on whoever was too slow (correct) or on the
+buzzer (wrong). Two sip-n-puffs are polled at once so both stations are
+live. Two-player uses the **base page only** (the food submenu is skipped
+because the board is shared). Full rules in
+**[TWO_PLAYER.md](./TWO_PLAYER.md)**; set `two_player = false` for the
+classic single-player food-navigation game.
+
 ### Multilingual (13 languages)
 
 Thai, Japanese, Czech, Mandarin, Hindi, Spanish, French, Arabic, Bengali,
@@ -344,7 +368,8 @@ to `upstream_patches/` keep their MIT headers.
 | `mode = *.py` boot-into-game            | Working             |
 | `submenu = *.py` menu launch            | Working             |
 | cause_and_effect / color_cycle / bubble_pop | Working         |
-| AAC Trainer — base flow                 | Working             |
+| AAC Trainer — single-player flow        | Working             |
+| AAC Trainer — two-player race mode      | Working (P1/P2 buzz-in; see TWO_PLAYER.md) |
 | AAC Trainer — 13-language localization  | Working (screen-swapper; audio + screens on SD) |
 | AAC Trainer — Sip-N-Puff integration    | Working (generic-HID USB, multiple devices)     |
 | Leaderboard persistence for AAC Trainer | Working (`/sd/hiscores.txt`) |

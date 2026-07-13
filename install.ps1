@@ -68,7 +68,10 @@ function Apply-Patch([string]$Rel) {
 }
 
 Apply-Patch "action.py"
+Apply-Patch "code.py"
 Apply-Patch "machine.py"
+Apply-Patch "input_manager.py"
+Apply-Patch "audio_player.py"
 Apply-Patch "config_reader.py"
 Apply-Patch "config.txt"
 Apply-Patch "menu_system.md"

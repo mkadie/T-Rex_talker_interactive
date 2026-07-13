@@ -26,6 +26,8 @@ for those changes.
 |------|-------------------------|
 | `action.py` | Recognize `submenu` / `list` values ending in `.py` (and an explicit `subprogram` key) as subprogram launches and emit `"subprogram:<path>"`. |
 | `machine.py` | New `_launch_subprogram()` method, a `subprogram:` branch in the press handler, and startup support for `mode = stim_games/<file>.py` in `config.txt`. |
+| `input_manager.py` | Attach and poll **all** connected HID keyboards at once (per-device report buffers, merged keys) so two sip-n-puffs / stations play simultaneously; plus a generic-HID endpoint fallback so CircuitPython composite sip-n-puff adapters (VID `2e8a`, whose HID interface is not a "boot keyboard") are recognized. |
+| `audio_player.py` | `play(sound_file, block=False)` — start playback and return immediately (file held open until the next `play()`/`stop()`), so the game loop stays responsive while a prompt is still speaking. Default `block=True` preserves the original behaviour. |
 | `config_reader.py` | Add `"mode"` to the config allowlist so the boot-into-subprogram setting survives `apply_config`. |
 | `config.txt` | Commented `mode` example (no behavioural change). |
 | `menu_system.md` | Documentation updates: subprogram launch syntax, `subprogram` key row, `mode` row, implementation status entry, version history. |
