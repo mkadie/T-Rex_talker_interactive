@@ -68,8 +68,9 @@ class InputManager:
         if config.get("rotary_encoder", False):
             self._init_encoder(config)
 
-        # USB HID keyboard (Fruit Jam DVI variant)
-        self._kb_device = None
+        # USB HID keyboard(s) (Fruit Jam DVI variant) — list of attached
+        # keyboards so multiple sip-n-puffs can play at once.
+        self._kbds = []
         if config.get("input_type") == "USB_HID_KEYBOARD":
             self._init_keyboard(config)
 
@@ -293,6 +294,8 @@ class InputManager:
         # One entry per attached keyboard, so multiple sip-n-puff / keyboard
         # devices drive the game at once. Each: {dev, ep, report, prev}.
         self._kbds = []
+        self._key_events = []   # raw keycodes newly pressed this poll, for
+                                # multi-cursor games that route keys per player
         self._kb_next_attempt = 0.0
         self._kb_retry_period = 1.0
         # 'a' rotates the selection (auto-repeats while held); 's'/Enter
@@ -424,6 +427,7 @@ class InputManager:
                 new_keys = keys_now - kb["prev"]
                 kb["prev"] = keys_now
                 for code in new_keys:
+                    self._key_events.append(code)
                     if code == self._kb_advance_code:
                         self._move_selection(1)
                         self._kb_repeat_interval = self._kb_repeat_first
@@ -482,6 +486,7 @@ class InputManager:
         self._kb_held = set()
         self._kb_repeat_interval = self._kb_repeat_first
         self._kb_repeat_next = 0.0
+        self._key_events = []
         # Resync direct GPIO buttons so a press made during the gap isn't
         # seen as a fresh edge when polling resumes.
         try:
@@ -489,6 +494,13 @@ class InputManager:
                 self._direct_last[i] = pin.value
         except Exception:
             pass
+
+    def drain_key_events(self):
+        """Return and clear the raw keycodes pressed since the last call.
+        Lets a game route keys to separate players/cursors."""
+        ev = self._key_events
+        self._key_events = []
+        return ev
 
     def _handle_key(self, code):
         """Map an HID key code to a press event.

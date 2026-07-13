@@ -36,7 +36,19 @@ MAX_HISCORES = 3
 NAME_LENGTH = 5
 
 # Characters for name entry — space first, then A-Z, then 0-9
-NAME_CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+# Leading "-" so a name slot shows a dash until a letter is dialed in,
+# making the current position obvious. Space is last (rendered as "_").
+NAME_CHARS = "-ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "
+
+# HID keycodes for routing two-player input:
+#   Player 1 -> Left / Right / Space     Player 2 -> Up / Down / Enter
+_KC_RIGHT = 0x4F
+_KC_LEFT = 0x50
+_KC_DOWN = 0x51
+_KC_UP = 0x52
+_KC_ENTER = 0x28
+_KC_SPACE = 0x2C
+NUM_CELLS = 8   # answer board is a 4x2 grid
 
 # Profanity filter — common words and fragments to catch
 _BAD_WORDS = {
@@ -168,11 +180,26 @@ class AacTrainer(Subprogram):
         self._pending_ask = False
         self._pending_end = False
 
-        # Live 2-player score bar (bottom of the board). Player 2 is a
-        # placeholder until 2-player mode lands.
+        # Live 2-player score bar (bottom of the board).
         self._p1_label = None
         self._p2_label = None
         self._score_bar_sec = -1
+
+        # --- Two-player real-time race -------------------------------------
+        # P1 drives Left/Right/Space, P2 drives Up/Down/Enter; both cursors
+        # move at once and the first selection ends the question. Multi-step
+        # (food) answers can't work on a shared board, so 2P uses single-step
+        # base-page questions only.
+        _tp = str(hdr.get("two_player", "true")).strip().lower()
+        self._two_player = _tp not in ("false", "0", "no", "off")
+        if self._two_player:
+            self._page2 = []
+        self._p1_idx = 0
+        self._p2_idx = NUM_CELLS - 1
+        self._p1_time = 0.0
+        self._p2_time = 0.0
+        self._q_start = None       # monotonic time input opened this question
+        self._p2_hl = None         # blue P2 highlight TileGrid
 
         # Load high scores and show start screen
         self._hiscores = self._load_hiscores()
@@ -236,6 +263,30 @@ class AacTrainer(Subprogram):
             self._update_score_bar()
             return True
 
+        # Two-player real-time input: both cursors move at once; the first
+        # selection (P1 Space or P2 Enter) ends the question.
+        if self._two_player:
+            if self._q_start is None:
+                self._q_start = now
+            self.input.poll()          # pump keyboard reads -> fills events
+            for code in self.input.drain_key_events():
+                if code == _KC_LEFT:
+                    self._move_cursor(1, -1)
+                elif code == _KC_RIGHT:
+                    self._move_cursor(1, 1)
+                elif code == _KC_UP:
+                    self._move_cursor(2, -1)
+                elif code == _KC_DOWN:
+                    self._move_cursor(2, 1)
+                elif code == _KC_SPACE:
+                    self._player_select(1)
+                    break
+                elif code == _KC_ENTER:
+                    self._player_select(2)
+                    break
+            self._update_score_bar()
+            return True
+
         press = self.input.poll()
 
         cur_sel = getattr(self.input, '_selected_index', 0)
@@ -268,13 +319,26 @@ class AacTrainer(Subprogram):
 
     def _end_round(self):
         """Handle scoring, name entry, and hiscore save after a round."""
+        self._show_full_screen("finished")
+        self._say(self._lang_prompt(self._done_sound))
+
+        if self._two_player:
+            print("2P finished: P1=%.1f  P2=%.1f" %
+                  (self._p1_time, self._p2_time))
+            # Both players are eligible for the leaderboard, in order.
+            for ptime in (self._p1_time, self._p2_time):
+                self._hiscores = self._load_hiscores()
+                rank = self._get_rank(ptime)
+                if rank is not None:
+                    name = self._name_entry_screen(ptime)
+                    self._insert_hiscore(ptime, name, rank)
+                    self._save_hiscores()
+            return
+
         elapsed = time.monotonic() - self._run_start
         total = elapsed + self._score_sec
         print("Chicken Challenge: run finished in {:.1f}s "
               "(wrong: {})".format(total, self._wrong_count))
-        self._show_full_screen("finished")
-        self._say(self._lang_prompt(self._done_sound))
-
         rank = self._get_rank(total)
         if rank is not None:
             player_name = self._name_entry_screen(total)
@@ -299,6 +363,9 @@ class AacTrainer(Subprogram):
 
         self._score_sec = 0.0
         self._wrong_count = 0
+        self._p1_time = 0.0
+        self._p2_time = 0.0
+        self._q_start = None
         self._round_index = 0
         self._asked = set()
         self._done = False
@@ -715,6 +782,18 @@ class AacTrainer(Subprogram):
         except Exception:
             pass
 
+        # Reset both cursors for the new question: P1 -> cell 1 (yellow),
+        # P2 -> cell 8 (blue). Timer opens when the prompt finishes.
+        if self._two_player:
+            self._p1_idx = 0
+            self._p2_idx = NUM_CELLS - 1
+            try:
+                self.display.set_highlight(self._p1_idx)
+            except Exception:
+                pass
+            self._position_p2_highlight()
+            self._q_start = None
+
         if prompt:
             # Queued (non-blocking) so the player can navigate and answer
             # while the question is still being spoken.
@@ -799,6 +878,98 @@ class AacTrainer(Subprogram):
             pass
         self._update_item_text()
 
+    # ----- two-player cursors --------------------------------------------
+
+    def _move_cursor(self, player, delta):
+        """Move a player's cursor (wrapping) and reposition its highlight —
+        P1 = yellow (display highlight), P2 = blue."""
+        n = len(self._items) or NUM_CELLS
+        if player == 1:
+            self._p1_idx = (self._p1_idx + delta) % n
+            try:
+                self.display.set_highlight(self._p1_idx)
+            except Exception:
+                pass
+        else:
+            self._p2_idx = (self._p2_idx + delta) % n
+            self._position_p2_highlight()
+
+    def _player_select(self, player):
+        """A player buzzed in. First selection ends the question: score it,
+        speak the word + feedback, and advance (deferred until audio ends)."""
+        if not self._items:
+            return
+        idx = (self._p1_idx if player == 1 else self._p2_idx) % len(self._items)
+        selected = self._items[idx]
+        selected_id = str(selected.get("id", ""))
+        expected = self._current_path[0] if self._current_path else None
+        correct = bool(expected and selected_id == expected)
+
+        elapsed = 0.0
+        if self._q_start is not None:
+            elapsed = time.monotonic() - self._q_start
+            self._q_start = None
+        # Race time is shared — both players' clocks advance by it.
+        self._p1_time += elapsed
+        self._p2_time += elapsed
+        # Penalty: correct -> the OTHER player is docked 30 s; wrong -> the
+        # player who buzzed in is docked.
+        loser = (2 if player == 1 else 1) if correct else player
+        if loser == 1:
+            self._p1_time += self._penalty
+        else:
+            self._p2_time += self._penalty
+        print("2P: P%d picked %s (want %s) -> %s | P1=%.1f P2=%.1f" % (
+            player, selected_id, expected, "OK" if correct else "X",
+            self._p1_time, self._p2_time))
+
+        item_sound = selected.get("sound")
+        if item_sound:
+            self._enqueue(self._lang_word(selected_id, item_sound))
+        self.set_status((0, 255, 0) if correct else (255, 0, 0))
+        self._enqueue(self._lang_prompt(
+            self._correct_sound if correct else self._wrong_sound))
+
+        self._round_index += 1
+        if self._round_index >= self._round_count:
+            self._pending_end = True
+        else:
+            self._pending_ask = True
+
+    def _make_p2_highlight(self):
+        """Create the blue Player-2 highlight (border-only), sized to a cell."""
+        import displayio
+        zw = getattr(self.display, "_zone_width", self.display._width // 4)
+        zh = getattr(self.display, "_zone_height", self.display._height // 2)
+        border = max(2, min(zw, zh) // 16)
+        bmp = displayio.Bitmap(zw, zh, 2)
+        pal = displayio.Palette(2)
+        pal[0] = 0x000000
+        pal.make_transparent(0)
+        pal[1] = 0x33AAFF   # blue
+        for x in range(zw):
+            for b in range(border):
+                bmp[x, b] = 1
+                bmp[x, zh - 1 - b] = 1
+        for y in range(zh):
+            for b in range(border):
+                bmp[b, y] = 1
+                bmp[zw - 1 - b, y] = 1
+        return displayio.TileGrid(bmp, pixel_shader=pal, x=0, y=0)
+
+    def _position_p2_highlight(self):
+        if self._p2_hl is None:
+            return
+        cols = getattr(self.display, "_cols", 4)
+        zw = getattr(self.display, "_zone_width", self.display._width // cols)
+        zh = getattr(self.display, "_zone_height", self.display._height // 2)
+        idx = self._p2_idx % (len(self._items) or NUM_CELLS)
+        try:
+            self._p2_hl.x = (idx % cols) * zw
+            self._p2_hl.y = (idx // cols) * zh
+        except Exception:
+            pass
+
     def _update_item_text(self):
         """No-op: item labels are baked into the pre-rendered board image
         per language, so no runtime (ASCII-only) text overlay is drawn."""
@@ -826,23 +997,43 @@ class AacTrainer(Subprogram):
         splash.append(displayio.TileGrid(bar, pixel_shader=pal,
                                          x=0, y=h - bar_h))
         self._p1_label = label.Label(
-            terminalio.FONT, text="P1  0:00", color=0x33FF66, scale=2,
+            terminalio.FONT, text="P1  0:00", color=0xFFFF00, scale=2,
             anchor_point=(0.0, 1.0), anchored_position=(6, h - 3))
         splash.append(self._p1_label)
+        p2_txt = "P2  0:00" if self._two_player else "P2  ---"
         self._p2_label = label.Label(
-            terminalio.FONT, text="P2  ---", color=0x8899AA, scale=2,
+            terminalio.FONT, text=p2_txt, scale=2,
+            color=0x33AAFF if self._two_player else 0x8899AA,
             anchor_point=(1.0, 1.0), anchored_position=(w - 6, h - 3))
         splash.append(self._p2_label)
+        # Blue P2 cursor lives in the same splash so it clears with the board.
+        if self._two_player:
+            self._p2_hl = self._make_p2_highlight()
+            splash.append(self._p2_hl)
+            self._position_p2_highlight()
         self._score_bar_sec = -1
         self._update_score_bar(force=True)
 
     def _update_score_bar(self, force=False):
-        """Refresh Player 1's live time (once per second). Player 2 stays a
-        placeholder until 2-player mode is added."""
-        lbl = self._p1_label
-        if lbl is None:
+        """Refresh the live time(s), once per second."""
+        if self._p1_label is None:
             return
         now = time.monotonic()
+        if self._two_player:
+            live = (now - self._q_start) if self._q_start is not None else 0.0
+            secs = int(live)
+            if not force and secs == self._score_bar_sec:
+                return
+            self._score_bar_sec = secs
+            try:
+                self._p1_label.text = "P1  " + self._format_time(
+                    self._p1_time + live)
+                if self._p2_label is not None:
+                    self._p2_label.text = "P2  " + self._format_time(
+                        self._p2_time + live)
+            except Exception:
+                pass
+            return
         paused = (now - self._audio_active_since
                   if self._audio_active_since is not None else 0)
         disp = (now - self._run_start - paused) + self._score_sec
@@ -856,7 +1047,7 @@ class AacTrainer(Subprogram):
         if self._wrong_count:
             txt += "  x%d" % self._wrong_count
         try:
-            lbl.text = txt
+            self._p1_label.text = txt
         except Exception:
             pass
 
