@@ -1,9 +1,9 @@
 # T-Rex Talker Interactive
 
 Stimulation games and pluggable subprograms for the
-[T-Rex Talker](https://github.com/mkadie) AAC device — including the
-**"Chicken Challenge" AAC Trainer** designed for the Maker Faire
-Sip-N-Puff Rubber Chicken demo.
+[T-Rex Talker](https://github.com/mkadie) AAC device — including
+**T-Rex's Rubber Chicken Challenge**, a timed, **13-language** AAC quiz
+built for the Maker Faire Sip-N-Puff Rubber Chicken demo.
 
 This is an **extension-only overlay**. It adds a subprogram framework
 to the base T-Rex Talker software so that:
@@ -233,30 +233,78 @@ Then add a menu entry: `submenu = stim_games/my_game.py`. Done.
 
 ---
 
-## The AAC Trainer ("Chicken Challenge")
+## T-Rex's Rubber Chicken Challenge (the AAC Trainer)
 
-The headline subprogram. Implements the Maker-Faire demo described in
-Michael Kadie's T-Rex Sip-N-Puff Rubber Chicken Edition documentation
-(§3, "Maker Faire Engagement: The Chicken Challenge Game").
+The headline subprogram (`stim_games/aac_trainer.py`) — a timed AAC quiz
+built for the Maker-Faire Sip-N-Puff demo, now **multilingual** and running
+on the Fruit Jam DVI + USB variant.
 
 Gameplay:
 
-1. Ten voice prompts are played in sequence.
-2. The player navigates the trainer menu and selects the AAC item that
-   answers each prompt.
-3. Score is wall-clock time plus a 30-second penalty per wrong answer.
-   The round timer pauses during every audio playback.
+1. A voice prompt describes a scenario ("Someone held the door for you —
+   what do you say?").
+2. The player navigates the AAC board and selects the item that answers
+   it. Base-page answers are direct; food answers are reached through
+   the **More** button.
+3. Score is wall-clock time plus a 30 s penalty per wrong answer (the
+   timer pauses during audio). A top-3 leaderboard persists to
+   `/sd/hiscores.txt` with encoder name entry.
 
-Input modes, simultaneously:
+Round shape: **6 questions per round**, drawn from a 14-item pool (one per
+board word) with no repeats in a round. Target selection is page-weighted —
+**75 %** land on the base page, **25 %** on the food page — so the common
+words come up ~3× as often. Configure via `stim_games/aac_trainer.cfg`
+(`rounds`, `first_page_bias`, `penalty_seconds`, …).
 
-| Hardware              | Navigate                                 | Select          | Exit            |
-|-----------------------|------------------------------------------|-----------------|-----------------|
-| Rotary encoder         | rotate                                   | press           | hold 2 s        |
-| Single button / puff   | tap (hold = accelerating repeat)         | double-tap      | hold 3 s        |
-| Sip-N-Puff sip         | sip events emit −1 ticks (if supported)  | (via puff path) | (via puff path) |
+### Multilingual (13 languages)
 
-Tune everything via `stim_games/aac_trainer.cfg`. See the file itself
-for the list of keys; the full spec is in `T-Rex_Talker_Subprogram.md`.
+Thai, Japanese, Czech, Mandarin, Hindi, Spanish, French, Arabic, Bengali,
+Portuguese, Russian, German, and English. **Everything** localizes — the
+spoken prompts, per-word audio, feedback, and the full **screens**.
+
+Because CircuitPython's built-in font is ASCII-only, each screen is
+**pre-rendered per language into an image** on the host (Pillow + Noto
+fonts) so every script renders perfectly on-device — the game is a
+"screen-swapper". Content lives on the SD card:
+
+- `/sd/screens/<lang>/{title,board_base,board_food,finished}.bmp`
+- `/sd/sounds/game/<lang>/{words,prompts}/*.wav`
+
+On the start and end screens, **BUTTON1 / BUTTON3** cycle the language
+(silent while scrolling; after 5 s it speaks the language's name in that
+language), and **BUTTON2** starts. The active language is shown in English.
+
+### Input
+
+Runs on the `FRUITJAM_DVI_KBD` variant. Works simultaneously with:
+
+| Hardware | Navigate | Select |
+|---|---|---|
+| USB keyboard | arrows | Enter / Space |
+| Onboard buttons (in game) | BUTTON1/2/3 activate the highlighted cell | — |
+| Sip-n-puff adapter(s) | emulated arrows | emulated Enter |
+
+Sip-n-puff adapters are **CircuitPython composite devices** whose HID
+interface isn't a "boot keyboard", so the input manager attaches them via a
+generic HID-endpoint fallback and polls **multiple keyboards at once** (two
+players / stations). Prompts play **non-blocking** so navigation stays
+responsive while a clip is still speaking.
+
+### Generating the localized content
+
+Host-side tools (need `gTTS`, `deep-translator`, `Pillow`, `ffmpeg`):
+
+```sh
+python tools/make_trainer_sounds.py       # English prompt/feedback MP3s
+python tools/generate_game_i18n.py        # 13-language word + prompt WAVs -> out/game_i18n/
+python tools/generate_screens.py          # 13-language screen BMPs      -> out/screens/
+python tools/generate_board_art.py        # English flash board images
+```
+
+Then copy `out/game_i18n/*` and `out/screens/*` onto the SD under
+`/sd/sounds/game/` and `/sd/screens/`. The card is host-read-only by
+default; see **`documents/circuitpython_SD_writing.md`** for the `boot.py`
+`storage.remount` cycle that hands it to the PC.
 
 ---
 
@@ -297,7 +345,8 @@ to `upstream_patches/` keep their MIT headers.
 | `submenu = *.py` menu launch            | Working             |
 | cause_and_effect / color_cycle / bubble_pop | Working         |
 | AAC Trainer — base flow                 | Working             |
-| AAC Trainer — Sip-N-Puff integration    | Stubbed; needs driver surface (`input.puff_pressed`) |
-| Leaderboard persistence for AAC Trainer | Future              |
-| Graphical on-screen trainer feedback    | Future              |
+| AAC Trainer — 13-language localization  | Working (screen-swapper; audio + screens on SD) |
+| AAC Trainer — Sip-N-Puff integration    | Working (generic-HID USB, multiple devices)     |
+| Leaderboard persistence for AAC Trainer | Working (`/sd/hiscores.txt`) |
+| Graphical on-screen trainer feedback    | Working (per-language pre-rendered screens)     |
 | Simulator / host-side test harness      | Future              |

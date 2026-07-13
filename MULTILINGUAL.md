@@ -3,6 +3,17 @@
 Documentation for the multi-lingual language switching feature, including
 sound/menu/image generation pipelines and deployment.
 
+> **Scope.** This document covers the **encoder language picker**
+> (`stim_games/multi_lingual.py`): an 8-word runtime picker that swaps the
+> device's active language, with 1-bit banner images and per-language menus.
+>
+> The **T-Rex's Rubber Chicken Challenge** game localizes differently — it
+> uses a 14-word game vocabulary, full-colour **per-language screens**
+> pre-rendered on the host, and SD-hosted audio, driven by
+> `tools/generate_screens.py` and `tools/generate_game_i18n.py`. See the
+> repo [README.md](./README.md). Both pipelines share the `LANGUAGES` table
+> in `tools/generate_language_sounds.py`.
+
 ---
 
 ## Overview

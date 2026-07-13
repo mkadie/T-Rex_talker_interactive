@@ -1,4 +1,13 @@
-# Fruit Jam DVI — Multi-Lingual AAC Demo
+# Fruit Jam DVI — Multi-Lingual AAC Demo (legacy standalone)
+
+> **Legacy.** This is the original self-contained 8-button language-cycling
+> demo (a single `code.py`). It has been **superseded** by the full game:
+> the base T-Rex Talker machine booting **T-Rex's Rubber Chicken Challenge**
+> (`stim_games/aac_trainer.py`) on the `FRUITJAM_DVI_KBD` variant, which adds
+> the timed quiz, per-language pre-rendered screens, sip-n-puff support, and
+> SD-hosted content. See the repo **[README.md](../README.md)** ("T-Rex's
+> Rubber Chicken Challenge"). This doc is kept for the simple demo, which is
+> parked on-device as `code.py.trucc_bak`.
 
 An 8-button AAC board running on the Adafruit Fruit Jam, using the
 onboard DVI/HDMI output, USB host keyboard, and TLV320DAC3100 audio.
