@@ -108,6 +108,12 @@ class Machine:
 
         # Display — pass shared SPI bus if SD card shares it
         spi = self.storage.spi if self._config.get("sd_shares_display_spi") else None
+        # When booting straight into a subprogram, suppress the display's
+        # initial background so no menu board flashes before the
+        # subprogram paints its first frame.
+        _boot_mode = self._config.get("mode")
+        if isinstance(_boot_mode, str) and _boot_mode.endswith(".py"):
+            self._config["background_image"] = None
         self.display = DisplayManager(self._config, spi=spi)
 
         # Shared I2C bus (touch + codec may share it)
@@ -157,7 +163,14 @@ class Machine:
             self._menu_stack = MenuStack(menus_dir, self._start_menu,
                                          storage=self.storage)
             self._build_grid()
-            self._update_display()
+            # Skip the initial menu paint when booting straight into a
+            # subprogram (mode=...py in config.txt): otherwise the
+            # start_menu board flashes on screen for a moment before the
+            # subprogram draws its first frame. The menu is painted after
+            # the subprogram exits (see run()).
+            _boot_mode = self._config.get("mode")
+            if not (isinstance(_boot_mode, str) and _boot_mode.endswith(".py")):
+                self._update_display()
             print("Menu loaded:", self._menu_stack.name)
         except Exception as e:
             print("Menu load failed ({}), falling back to button_config".format(e))
@@ -372,10 +385,10 @@ class Machine:
                         self._lang_commit(self._lang_index)
                         self._lang_active = False
                     elif enc_btn_down:
-                        # Encoder press without picker active: encoder is
-                        # repurposed for language switching, so we ignore
-                        # it as a menu trigger.
-                        pass
+                        # No overlay active → cycle directly to the next
+                        # language. Lets a single encoder/BUTTON3 tap rotate
+                        # languages even when encoder rotation isn't wired.
+                        self._lang_cycle_next()
                     else:
                         self._handle_press(button)
             else:
@@ -441,6 +454,27 @@ class Machine:
             except Exception:
                 pass
         print("Lang switcher: highlight", en_name)
+
+    def _lang_cycle_next(self):
+        """Advance directly to the next language. Used when the user taps
+        the encoder click (BUTTON3) without first turning the encoder."""
+        n = len(self._LANGUAGES)
+        if n == 0:
+            return
+        curr_menu = None
+        if self._menu_stack is not None:
+            stack = getattr(self._menu_stack, "_stack", None)
+            if stack:
+                curr_menu = stack[-1]
+        curr = 0
+        for i, lang in enumerate(self._LANGUAGES):
+            if lang[3] == curr_menu:
+                curr = i
+                break
+        nxt = (curr + 1) % n
+        en_name = self._LANGUAGES[nxt][1]
+        print("Lang switcher: cycle ->", en_name)
+        self._lang_commit(nxt)
 
     def _lang_commit(self, index):
         _code, en_name, _native, menu_file = self._LANGUAGES[index]
@@ -709,6 +743,11 @@ class Machine:
             cfg_path = target[:-3] + ".cfg"
             # Allow "stim_games.foo" dotted form too
             cfg_path = cfg_path.replace(".", "/") if "/" not in cfg_path else cfg_path
+            # The sidecar lives next to the .py under the filesystem root
+            # (e.g. /stim_games/aac_trainer.cfg) — make it absolute so it
+            # isn't mis-resolved under the menus dir.
+            if not cfg_path.startswith("/"):
+                cfg_path = "/" + cfg_path
         if cfg_path:
             resolved = self._resolve_path(cfg_path)
             try:
