@@ -48,6 +48,7 @@ LANG_SELECT_TIMEOUT = 5    # seconds of no scrolling before the language is
 HISCORE_FILE = "/sd/hiscores.txt"
 MAX_HISCORES = 3
 NAME_LENGTH = 5
+NAME_ENTRY_TIMEOUT = 15    # seconds of no activity before name entry ends
 
 # Characters for name entry — space first, then A-Z, then 0-9
 # Leading "-" so a name slot shows a dash until a letter is dialed in,
@@ -712,6 +713,7 @@ class AacTrainer(Subprogram):
         _render_name()
 
         slot = 0
+        last_activity = time.monotonic()
         while slot < NAME_LENGTH:
             press = self.input.poll()
             cur = getattr(self.input, '_selected_index', 0)
@@ -719,7 +721,9 @@ class AacTrainer(Subprogram):
             if cur != name[slot]:
                 name[slot] = cur
                 _render_name()
+                last_activity = time.monotonic()
             if press is not None:
+                last_activity = time.monotonic()
                 slot += 1
                 if slot < NAME_LENGTH:
                     self.input._selected_index = 0
@@ -728,6 +732,13 @@ class AacTrainer(Subprogram):
                         self.input._last_encoder_pos = self.input._encoder.position
                     name[slot] = 0
                     _render_name()
+            # End name entry after a stretch of no rotating or pressing, so
+            # an abandoned high score doesn't hang the game (keeps whatever
+            # has been typed so far).
+            if time.monotonic() - last_activity >= NAME_ENTRY_TIMEOUT:
+                print("Chicken Challenge: name entry timed out after {}s".format(
+                    NAME_ENTRY_TIMEOUT))
+                break
             time.sleep(0.03)
 
         # Restore encoder

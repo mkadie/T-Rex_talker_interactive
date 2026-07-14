@@ -63,7 +63,9 @@ fun at a booth and harmless. No mitigation is applied.
   yank the board out from under the other. `More` is still on the board — a
   player who selects it simply gets a wrong answer.
 - **Name entry** starts each slot on `-` so you can see which letter you're
-  dialing in (rotate with your move keys, advance with your select key).
+  dialing in (rotate with your move keys, advance with your select key). It
+  **ends automatically after 15 s of no activity** (keeping whatever's typed)
+  so an abandoned high score can't hang the game at a booth.
 - The live **score bar** along the bottom shows both players' running times
   (P1 yellow left, P2 blue right). The round timer pauses during all audio.
 
