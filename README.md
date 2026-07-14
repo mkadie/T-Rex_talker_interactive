@@ -280,6 +280,11 @@ because the board is shared). Full rules in
 **[TWO_PLAYER.md](./TWO_PLAYER.md)**; set `two_player = false` for the
 classic single-player food-navigation game.
 
+**Booth-friendly timeouts.** High-score name entry ends after **15 s** of no
+input (keeping whatever's typed), and an abandoned round resets to the
+attract / start screen after **60 s** of no gameplay activity — so a walked-
+away player never leaves the game stuck.
+
 ### Multilingual (13 languages)
 
 Thai, Japanese, Czech, Mandarin, Hindi, Spanish, French, Arabic, Bengali,

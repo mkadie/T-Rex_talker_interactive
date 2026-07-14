@@ -49,6 +49,8 @@ HISCORE_FILE = "/sd/hiscores.txt"
 MAX_HISCORES = 3
 NAME_LENGTH = 5
 NAME_ENTRY_TIMEOUT = 15    # seconds of no activity before name entry ends
+GAME_IDLE_TIMEOUT = 60     # seconds of no gameplay activity before the round
+                           # resets to the attract / start screen
 
 # Characters for name entry — space first, then A-Z, then 0-9
 # Leading "-" so a name slot shows a dash until a letter is dialed in,
@@ -215,6 +217,7 @@ class AacTrainer(Subprogram):
         self._p2_time = 0.0
         self._q_start = None       # monotonic time input opened this question
         self._p2_hl = None         # blue P2 highlight TileGrid
+        self._last_activity = time.monotonic()   # gameplay idle-timeout clock
 
         # Load high scores and show start screen
         self._hiscores = self._load_hiscores()
@@ -275,6 +278,7 @@ class AacTrainer(Subprogram):
             # End-of-round handled at the top of the next tick.
             return True
         if audio_active:
+            self._last_activity = now   # audio playing/queued -> not idle
             self._update_score_bar()
             return True
 
@@ -284,7 +288,10 @@ class AacTrainer(Subprogram):
             if self._q_start is None:
                 self._q_start = now
             self.input.poll()          # pump keyboard reads -> fills events
-            for code in self.input.drain_key_events():
+            events = self.input.drain_key_events()
+            if events:
+                self._last_activity = now
+            for code in events:
                 if code == _KC_LEFT:
                     self._move_cursor(1, -1)
                 elif code == _KC_RIGHT:
@@ -300,12 +307,16 @@ class AacTrainer(Subprogram):
                     self._player_select(2)
                     break
             self._update_score_bar()
+            if now - self._last_activity >= GAME_IDLE_TIMEOUT:
+                self._idle_reset()
             return True
 
         press = self.input.poll()
+        active = press is not None
 
         cur_sel = getattr(self.input, '_selected_index', 0)
         if cur_sel != self._last_sel:
+            active = True
             self._last_sel = cur_sel
             if self._items:
                 self._sel_index = cur_sel % len(self._items)
@@ -328,8 +339,14 @@ class AacTrainer(Subprogram):
         elif ev == "exit":
             print("Chicken Challenge: exit gesture")
             return False
+        if ev in ("tick_fwd", "tick_back", "select"):
+            active = True
 
+        if active:
+            self._last_activity = now
         self._update_score_bar()
+        if now - self._last_activity >= GAME_IDLE_TIMEOUT:
+            self._idle_reset()
         return True
 
     def _end_round(self):
@@ -386,6 +403,24 @@ class AacTrainer(Subprogram):
         self._done = False
         self._run_start = time.monotonic()
         self._ask(self._round_index)
+
+    def _idle_reset(self):
+        """No gameplay activity for GAME_IDLE_TIMEOUT — abandon the round
+        and return to the attract / start screen (no scoring or name entry),
+        then wait for a new player to press start."""
+        print("Chicken Challenge: idle {}s — resetting to start screen".format(
+            GAME_IDLE_TIMEOUT))
+        try:
+            self.audio.stop()
+        except Exception:
+            pass
+        self._audio_q = []
+        self._audio_active_since = None
+        self._pending_ask = False
+        self._pending_end = False
+        self._done = False
+        self._restart_round()          # start screen -> wait -> fresh round
+        self._last_activity = time.monotonic()
 
     def teardown(self):
         pass
