@@ -64,6 +64,7 @@ def apply_config(hw_config, user_config):
     Returns the modified hw_config.
     """
     allowed = {
+        "test_mode",
         "sleep_enabled",
         "sleep_timeout",
         "volume",
