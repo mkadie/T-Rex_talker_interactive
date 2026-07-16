@@ -571,7 +571,13 @@ class AacTrainer(Subprogram):
                 self._announce_language()
                 announced = True
             press = self.input.poll()
-            if press is not None and not any(self._btn_raw(i) for i in range(3)):
+            events = self.input.drain_key_events()
+            # Either chicken's SELECT starts the game — P1 Space or P2 Enter
+            # (any other keyboard select works too). Draining the key events
+            # here also keeps the starting press from leaking into Q1.
+            if (_KC_SPACE in events or _KC_ENTER in events
+                    or (press is not None
+                        and not any(self._btn_raw(i) for i in range(3)))):
                 break
             time.sleep(0.01)
 
