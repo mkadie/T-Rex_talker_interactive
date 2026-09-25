@@ -65,10 +65,13 @@ _KC_DOWN = 0x51
 _KC_UP = 0x52
 _KC_ENTER = 0x28
 _KC_SPACE = 0x2C
-# Each chicken is a single switch, so every key in a player's set counts as
-# one squeeze (there is no "back").
-_P1_KEYS = (_KC_LEFT, _KC_RIGHT, _KC_SPACE)
-_P2_KEYS = (_KC_UP, _KC_DOWN, _KC_ENTER)
+# Each chicken does its own squeeze detection and sends one move key and
+# one select key. Moves go one direction only: P1 Right = +1, P2 Up = -1.
+# Left / Down are ignored (no going back; chicken B also sends a stray
+# Down just before its Enter).
+_P1_MOVE, _P1_SELECT = _KC_RIGHT, _KC_SPACE
+_P2_MOVE, _P2_SELECT = _KC_UP, _KC_ENTER
+_CHICKEN_KEYS = (_P1_MOVE, _P1_SELECT, _P2_MOVE, _P2_SELECT)
 NUM_CELLS = 8   # answer board is a 4x2 grid
 
 # Profanity filter — common words and fragments to catch
@@ -101,41 +104,6 @@ LANGS = [
     ("bn", "Bengali"), ("pt", "Portuguese"), ("ru", "Russian"),
     ("de", "German"),
 ]
-
-
-class _Squeeze:
-    """Turns one player's squeezes into "advance" / "select".
-
-    A squeeze starts a double-squeeze window. A second squeeze inside the
-    window is "select"; if the window closes with no second squeeze, it is
-    "advance". Only press edges count, so holding a squeeze does nothing.
-    """
-
-    def __init__(self, window):
-        self.window = window
-        self._first = None     # monotonic time of an unpaired squeeze
-
-    def reset(self):
-        self._first = None
-
-    def press(self, now):
-        """Record a squeeze. Returns "select", "advance" (a stale unpaired
-        squeeze that poll() hadn't flushed yet), or None."""
-        if self._first is not None:
-            if now - self._first <= self.window:
-                self._first = None
-                return "select"
-            self._first = now
-            return "advance"
-        self._first = now
-        return None
-
-    def poll(self, now):
-        """Return "advance" once an unpaired squeeze's window has closed."""
-        if self._first is not None and now - self._first > self.window:
-            self._first = None
-            return "advance"
-        return None
 
 
 class AacTrainer(Subprogram):
@@ -255,8 +223,6 @@ class AacTrainer(Subprogram):
         self._p1_time = 0.0
         self._p2_time = 0.0
         self._q_start = None       # monotonic time input opened this question
-        self._squeeze = {1: _Squeeze(self._double_tap),
-                         2: _Squeeze(self._double_tap)}
         self._p2_hl = None         # blue P2 highlight TileGrid
         self._last_activity = time.monotonic()   # gameplay idle-timeout clock
 
@@ -323,9 +289,8 @@ class AacTrainer(Subprogram):
             self._update_score_bar()
             return True
 
-        # Two-player real-time input: both cursors move at once. Squeeze
-        # advances a player's cursor, double-squeeze selects; the first
-        # selection ends the question.
+        # Two-player real-time input: both cursors move at once; the first
+        # selection (P1 Space or P2 Enter) ends the question.
         if self._two_player:
             if self._q_start is None:
                 self._q_start = now
@@ -333,23 +298,17 @@ class AacTrainer(Subprogram):
             events = self.input.drain_key_events()
             if events:
                 self._last_activity = now
-            selected = False
             for code in events:
-                if code in _P1_KEYS:
-                    player = 1
-                elif code in _P2_KEYS:
-                    player = 2
-                else:
-                    continue
-                if self._squeeze_event(player,
-                                       self._squeeze[player].press(now)):
-                    selected = True
+                if code == _P1_MOVE:
+                    self._move_cursor(1, 1)
+                elif code == _P2_MOVE:
+                    self._move_cursor(2, -1)
+                elif code == _P1_SELECT:
+                    self._player_select(1)
                     break
-            if not selected:
-                for player in (1, 2):
-                    if self._squeeze_event(player,
-                                           self._squeeze[player].poll(now)):
-                        break
+                elif code == _P2_SELECT:
+                    self._player_select(2)
+                    break
             self._update_score_bar()
             if now - self._last_activity >= GAME_IDLE_TIMEOUT:
                 self._idle_reset()
@@ -592,7 +551,7 @@ class AacTrainer(Subprogram):
         counted when no onboard button is held, so a held BUTTON1 press
         surfaced by poll() doesn't trip the start)."""
         self._btn_prev = [self._btn_raw(i) for i in range(3)]
-        # Drop squeezes buffered during the last round's audio so they
+        # Drop presses buffered during the last round's audio so they
         # can't instantly restart the game.
         try:
             self.input.flush_keyboards()
@@ -622,10 +581,10 @@ class AacTrainer(Subprogram):
                 announced = True
             press = self.input.poll()
             events = self.input.drain_key_events()
-            # Any squeeze from either chicken starts the game (any other
-            # keyboard select works too). The first question flushes the
-            # keyboards, so the rest of a double squeeze can't leak into Q1.
-            if (any(c in _P1_KEYS or c in _P2_KEYS for c in events)
+            # Any chicken press starts the game (any other keyboard select
+            # works too). The first question flushes the keyboards, so the
+            # starting press can't leak into Q1.
+            if (any(c in _CHICKEN_KEYS for c in events)
                     or (press is not None
                         and not any(self._btn_raw(i) for i in range(3)))):
                 break
@@ -714,8 +673,8 @@ class AacTrainer(Subprogram):
     def _name_entry_screen(self, total_seconds):
         """Let the player enter a 5-letter name using the encoder.
 
-        Squeeze (or encoder) steps the letter; double-squeeze (or button)
-        advances to the next slot.
+        A chicken's move key (or encoder) steps the letter; its select key
+        (or a button) advances to the next slot.
         After 5 characters, returns the name string.
         Uses a single persistent display group with updatable labels to
         minimize memory allocation.
@@ -776,7 +735,7 @@ class AacTrainer(Subprogram):
         group.append(name_lbl)
 
         hint_lbl = label.Label(
-            terminalio.FONT, text="Squeeze=letter  Double=next",
+            terminalio.FONT, text="Move=letter  Select=next",
             color=0x888888, scale=1,
             anchor_point=(0.5, 1.0),
             anchored_position=(w // 2, h - 5),
@@ -806,24 +765,25 @@ class AacTrainer(Subprogram):
 
         slot = 0
         last_activity = time.monotonic()
-        squeeze = _Squeeze(self._double_tap)
         while slot < NAME_LENGTH:
             press = self.input.poll()
             events = self.input.drain_key_events()
-            now = time.monotonic()
-            # Chicken squeezes: squeeze = next letter, double = next slot.
+            # Chickens: move key = next letter, select key = next slot.
             # Undo input_manager's own arrow / select handling of these keys.
-            ev = squeeze.poll(now)
+            step = 0
             for code in events:
-                if code in _P1_KEYS or code in _P2_KEYS:
+                if code in _CHICKEN_KEYS or code in (_KC_LEFT, _KC_DOWN):
                     self.input._selected_index = name[slot]
                     press = None
-                    last_activity = now
-                    ev = squeeze.press(now) or ev
-            if ev == "advance":
-                self.input._selected_index = (name[slot] + 1) % len(chars)
-            elif ev == "select":
-                press = True
+                if code in _CHICKEN_KEYS:
+                    last_activity = time.monotonic()
+                    if code in (_P1_MOVE, _P2_MOVE):
+                        step += 1
+                    else:
+                        press = True
+                        break
+            if step:
+                self.input._selected_index = (name[slot] + step) % len(chars)
             cur = getattr(self.input, '_selected_index', 0)
             cur = cur % len(chars)
             if cur != name[slot]:
@@ -926,8 +886,6 @@ class AacTrainer(Subprogram):
                 pass
             self._position_p2_highlight()
             self._q_start = None
-            self._squeeze[1].reset()
-            self._squeeze[2].reset()
 
         if prompt:
             # Queued (non-blocking) so the player can navigate and answer
@@ -1028,16 +986,6 @@ class AacTrainer(Subprogram):
         else:
             self._p2_idx = (self._p2_idx + delta) % n
             self._position_p2_highlight()
-
-    def _squeeze_event(self, player, ev):
-        """Apply a _Squeeze result to a player's cursor. Returns True if the
-        player selected (which ends the question)."""
-        if ev == "advance":
-            self._move_cursor(player, 1)
-        elif ev == "select":
-            self._player_select(player)
-            return True
-        return False
 
     def _player_select(self, player):
         """A player buzzed in. First selection ends the question: score it,

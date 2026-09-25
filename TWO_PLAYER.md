@@ -6,22 +6,17 @@ and race to buzz in the correct answer.
 
 ## Controls
 
-Each player drives their own cursor with one rubber chicken (a single
-switch). A chicken sends one key per squeeze; any of a player's keys counts
-as a squeeze:
+Each player drives their own cursor with one rubber chicken. The chicken
+does its own squeeze detection and sends one key to move and one to select:
 
-| Player | Keys (any = one squeeze) |
-|--------|--------------------------|
-| **Player 1** | Left / Right / Space |
-| **Player 2** | Up / Down / Enter |
+| Player | Move (one direction only) | Select |
+|--------|---------------------------|--------|
+| **Player 1** | Right → forward (+1) | **Space** |
+| **Player 2** | Up → backward (−1) | **Enter** |
 
-- **Squeeze** → move your cursor forward one cell (after the double-squeeze
-  window closes, `double_tap_sec`, default 0.6 s).
-- **Double squeeze** (two inside the window) → select your cell.
-- There is **no going back**, and **holding does nothing** — only the
-  squeeze itself counts. Squeezes spaced closer than the window read as a
-  select, so step slowly and double-squeeze deliberately.
-- On the **start screen**, any squeeze from either chicken starts the game.
+- There is **no going back**: Left and Down are ignored. (Chicken B sends a
+  stray Down just before its Enter, which is why Down must be ignored.)
+- On the **start screen**, any chicken press starts the game.
 
 - **Player 1** has the **yellow** cursor; it resets to **cell 1** each question.
 - **Player 2** has the **blue** cursor; it resets to **cell 8** each question.
@@ -34,8 +29,8 @@ players' adapters are both live simultaneously.
 
 1. Both players hear the same spoken prompt. Input is ignored while it plays.
 2. When the prompt finishes, both race — moving their cursors in real time.
-3. **The first selection ends the question** — whoever double-squeezes
-   first locks the answer. The other player does not get to
+3. **The first selection ends the question** — whoever buzzes in first (P1
+   Space or P2 Enter) locks the answer. The other player does not get to
    answer that question.
 4. The selected word + a correct / try-again cue play, then the next
    question loads. A game is `rounds` questions (default 6); questions do
@@ -72,7 +67,7 @@ fun at a booth and harmless. No mitigation is applied.
   yank the board out from under the other. `More` is still on the board — a
   player who selects it simply gets a wrong answer.
 - **Name entry** starts each slot on `-` so you can see which letter you're
-  dialing in (squeeze for the next letter, double-squeeze for the next slot). It
+  dialing in (move key for the next letter, select key for the next slot). It
   **ends automatically after 15 s of no activity** (keeping whatever's typed)
   so an abandoned high score can't hang the game at a booth.
 - The live **score bar** along the bottom shows both players' running times
@@ -86,7 +81,6 @@ In `stim_games/aac_trainer.cfg` (header):
 # two_player = true    # default; set false for the classic single-player game
 rounds = 6
 penalty_seconds = 30
-double_tap_sec = 0.6   # double-squeeze window = advance delay
 ```
 
 Single-player mode (`two_player = false`) keeps the original one-cursor,
