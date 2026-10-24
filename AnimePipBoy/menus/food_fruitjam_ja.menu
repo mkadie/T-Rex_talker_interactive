@@ -1,0 +1,71 @@
+# Japanese twin of food_fruitjam.menu (Japanese audio, English labels).
+# ===================================================
+#  Food & Drink Menu — FruitJam V2 (3x2 grid)
+#
+#  Reached from the "More" button on the base menu.
+#
+#  Layout (3 columns × 2 rows):
+#
+#  +----------+----------+----------+
+#  |  Water   |  Apple   |   Milk   |
+#  |    1     |    2     |    3     |
+#  +----------+----------+----------+
+#  |  Banana  | Cracker  |  ← Back  |
+#  |    4     |    5     |    6     |
+#  +----------+----------+----------+
+# ===================================================
+
+[menu]
+name = Food & Drink (Japanese)
+text_description = Food and drink
+type = grid
+columns = 3
+rows = 2
+back = base_fruitjam_ja.menu
+background = images/food/food_board.bmp
+
+# ----- Top Row -----
+
+[water]
+label = Water
+text_description = I want water
+image = images/food/water.bmp
+sound = /button_sounds/ja/water.mp3
+position = 1
+
+[apple]
+label = Apple
+text_description = I want an apple
+image = images/food/apple.bmp
+sound = /button_sounds/ja/apple.mp3
+position = 2
+
+[milk]
+label = Milk
+text_description = I want milk
+image = images/food/milk.bmp
+sound = /button_sounds/ja/milk.mp3
+position = 3
+
+# ----- Bottom Row -----
+
+[banana]
+label = Banana
+text_description = I want a banana
+image = images/food/banana.bmp
+sound = /button_sounds/ja/banana.mp3
+position = 4
+
+[cracker]
+label = Cracker
+text_description = I want a cracker
+image = images/food/cracker.bmp
+sound = /button_sounds/ja/cracker.mp3
+position = 5
+
+[back_button]
+label = Back
+text_description = Back to home
+image = images/food/back.bmp
+position = 6
+back =

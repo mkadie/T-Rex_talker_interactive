@@ -1,0 +1,80 @@
+# ===================================================
+#  Base Menu (Japanese) — FruitJam (3x2 grid, 160x128)
+#
+#  Artwork is the Moana icon set; cells with no Moana equivalent are
+#  generated tiles in the same palette. The $ and speech-bubble tiles
+#  (cells 4, 5) come from tools/make_animepipboy_icons.py.
+#
+#  Japanese twin of base_fruitjam.menu: same tiles, Japanese audio
+#  (tools/make_animepipboy_sounds.py). Labels stay English — the on-screen
+#  font has no Japanese glyphs.
+#
+#  Swap Language toggles between this menu and base_fruitjam.menu
+#  (stim_games/lang_toggle.py).
+#
+#  Layout (3 columns × 2 rows):
+#
+#  +----------+----------+----------+
+#  |   Yes    |    No    | Please & |
+#  |          |          |Thank You |
+#  |    1     |    2     |    3     |
+#  +----------+----------+----------+
+#  | How much |   Swap   |Food/Drink|
+#  | for that?| Language |          |
+#  |    4     |    5     |    6     |
+#  +----------+----------+----------+
+# ===================================================
+
+[menu]
+name = Base Menu (Japanese)
+text_description = Basic needs
+type = grid
+columns = 3
+rows = 2
+background = images/base/base_board.bmp
+
+# ----- Top Row -----
+
+[yes]
+label = Yes
+text_description = Yes
+image = images/base/yes.bmp
+sound = /button_sounds/ja/yes.mp3
+position = 1
+
+[no]
+label = No
+text_description = No
+image = images/base/no.bmp
+sound = /button_sounds/ja/no.mp3
+position = 2
+
+[thankyou]
+label = Please and Thank You
+text_description = Please and thank you
+image = images/base/thankyou.bmp
+sound = /button_sounds/ja/please_and_thank_you.mp3
+position = 3
+
+# ----- Bottom Row -----
+
+[howmuch]
+label = How much for that?
+text_description = How much for that?
+image = images/base/howmuch.bmp
+sound = /button_sounds/ja/how_much_for_that.mp3
+position = 4
+
+[swaplang]
+label = Swap Language
+text_description = Swap language (English / Japanese)
+image = images/base/swaplang.bmp
+subprogram = stim_games/lang_toggle.py
+position = 5
+
+[fooddrink]
+label = Food/Drink
+text_description = Food and drink
+image = images/base/fooddrink.bmp
+submenu = food_fruitjam_ja.menu
+position = 6
