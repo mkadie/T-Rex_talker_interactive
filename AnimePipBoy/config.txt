@@ -59,6 +59,13 @@ amp_soft_idle = true
 # on wake. 24 is the lowest value checked on this board.
 sleep_cpu_mhz = 24
 
+# True sleep: on battery, light-sleep until the encoder is pressed (pin
+# alarm on BUTTON1) instead of polling. Needs CircuitPython 11+ (alarm
+# module on the RP2350). Never on USB: it falls back to polling there.
+# On other versions the wake press may come from the MSPM0 input companion
+# -- list that pin in sleep_wake_pins (active low) and it works the same.
+sleep_true_on_battery = true
+
 # --- Hardware Variant ---
 # Which build this physical device is. Overrides DEFAULT_VARIANT in
 # hardware_config.py. Set this on any device that isn't the default:

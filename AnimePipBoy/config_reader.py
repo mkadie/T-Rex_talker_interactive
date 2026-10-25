@@ -83,7 +83,10 @@ def apply_config(hw_config, user_config):
         "display_rotation",
         "st7735_fast_init",     # shorter ST7735R init waits (AnimePipBoy)
         "amp_soft_idle",        # idle amp without codec reset (AnimePipBoy)
-        "sleep_cpu_mhz",        # CPU clock during sleep (AnimePipBoy)     # e.g. 270 to flip a 90-mounted screen 180°
+        "sleep_cpu_mhz",        # CPU clock during sleep (AnimePipBoy)
+        "sleep_true_on_battery",  # light sleep + pin alarm (AnimePipBoy)
+        "sleep_true_on_usb",    # bench only: true sleep even on USB
+        "sleep_on_usb",         # bench only: sleep at all while on USB     # e.g. 270 to flip a 90-mounted screen 180°
         "zoom_image_enabled",
         "start_menu",
         "emergency_push_enabled",

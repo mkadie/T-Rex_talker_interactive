@@ -280,6 +280,27 @@ class SleepManager:
             self._input._encoder_button.deinit()
             self._input._encoder_button = None
 
+        # True sleep (AnimePipBoy, config sleep_true_on_battery): light sleep
+        # with a pin alarm on each wake pin -- here the encoder button
+        # (BUTTON1). The CPU stops until the press, then carries on from
+        # here. Needs CircuitPython 11+ on the RP2350 (alarm module).
+        #
+        # ONLY ON BATTERY: with a USB host attached the board is externally
+        # powered and light sleep would also disturb the USB link, so on USB
+        # the poll loop below runs instead. (sleep_true_on_usb forces it,
+        # for bench tests only.)
+        #
+        # NOTE for other versions: the wake press may not be a direct MCU
+        # button there -- it may be a line driven by the MSPM0 input
+        # companion. Put that pin in sleep_wake_pins (active low), and it
+        # becomes a pin alarm the same way. Rotation cannot wake true sleep
+        # (pin alarms only), so the wake input must be a press.
+        if self._true_sleep_allowed():
+            woke_on = self._light_sleep_until_press()
+            if woke_on is not None:
+                print("Sleep: wake from", woke_on, "(light sleep)")
+                return self._finish_software_idle_wake(cut_rail, [])
+
         wake_btns = []
         for name in self._wake_pin_names:
             try:
@@ -359,6 +380,48 @@ class SleepManager:
             microcontroller.cpu.frequency = full_hz
             print("Sleep: CPU back to", full_hz // 1000000, "MHz")
 
+        return self._finish_software_idle_wake(cut_rail, wake_btns)
+
+    def _true_sleep_allowed(self):
+        """True sleep only on battery, and only where alarm exists."""
+        if not self._config.get("sleep_true_on_battery", False):
+            return False
+        on_usb = _HAS_SUPERVISOR and supervisor.runtime.usb_connected
+        if on_usb and not self._config.get("sleep_true_on_usb", False):
+            return False
+        try:
+            import alarm  # noqa: F401  (CircuitPython 11+ on RP2350)
+        except ImportError:
+            print("Sleep: no alarm module — using the poll loop")
+            return False
+        return True
+
+    def _light_sleep_until_press(self):
+        """Light-sleep until a wake pin goes low. Returns the pin name, or
+        None if true sleep could not be set up (caller polls instead).
+        Runs before the poll loop claims the wake pins, which PinAlarm
+        needs free."""
+        import alarm
+        alarms = {}
+        for name in self._wake_pin_names[:4]:      # RP2350: at most 4
+            try:
+                a = alarm.pin.PinAlarm(_pin(name), value=False, pull=True)
+                alarms[a] = name
+            except Exception as e:
+                print("Sleep: pin alarm {} failed: {}".format(name, e))
+        if not alarms:
+            return None
+        print("Sleep: light sleep until", ", ".join(alarms.values()),
+              "is pressed")
+        try:
+            woke = alarm.light_sleep_until_alarms(*alarms.keys())
+        except Exception as e:
+            print("Sleep: light sleep failed:", type(e).__name__, e)
+            return None
+        return alarms.get(woke, "alarm")
+
+    def _finish_software_idle_wake(self, cut_rail, wake_btns):
+        """Shared wake tail: power and display back, inputs reclaimed."""
         for _name, btn in wake_btns:
             btn.deinit()   # expander pins belong to InputManager; leave them
 
