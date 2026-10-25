@@ -46,6 +46,15 @@ display_hint_text = true
 # Screen flipped 180° (variant default is 90)
 display_rotation = 270
 
+# Faster screen start-up (boot and every wake): ST7735R init with
+# datasheet-style waits instead of the library's 500 ms ones.
+st7735_fast_init = true
+
+# Switch the amp's outputs off as soon as each sound finishes (no hiss
+# between words), instead of holding the codec in reset after 15 s of quiet:
+# the first word after a pause starts ~0.6 s sooner.
+amp_soft_idle = true
+
 # --- Hardware Variant ---
 # Which build this physical device is. Overrides DEFAULT_VARIANT in
 # hardware_config.py. Set this on any device that isn't the default:
