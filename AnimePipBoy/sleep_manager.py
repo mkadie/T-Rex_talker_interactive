@@ -320,6 +320,24 @@ class SleepManager:
               ", ".join([n for n, _ in wake_inputs] +
                         (["encoder rotation"] if encoder else [])))
 
+        # Run the wake poll at a low CPU clock (AnimePipBoy, config
+        # sleep_cpu_mhz). This chip has no alarm module, so "sleep" is this
+        # loop; at 24 MHz instead of 150 the core draws far less, and 24 MHz
+        # was checked to keep time.sleep() and USB working. Restored right
+        # after the wake is seen, before the display is rebuilt.
+        import microcontroller
+        full_hz = None
+        sleep_mhz = self._config.get("sleep_cpu_mhz")
+        if sleep_mhz:
+            try:
+                full_hz = microcontroller.cpu.frequency
+                microcontroller.cpu.frequency = int(sleep_mhz) * 1000000
+                print("Sleep: CPU {} -> {} MHz".format(
+                    full_hz // 1000000, int(sleep_mhz)))
+            except Exception as e:
+                print("Sleep: CPU clock unchanged:", type(e).__name__, e)
+                full_hz = None
+
         while True:
             woke_on = None
             for name, pin in wake_inputs:
@@ -336,6 +354,10 @@ class SleepManager:
             # 20 ms poll (was 100): wake is noticed ~40 ms sooner on average,
             # for a negligible amount of extra CPU while idle (AnimePipBoy).
             time.sleep(0.02)
+
+        if full_hz:
+            microcontroller.cpu.frequency = full_hz
+            print("Sleep: CPU back to", full_hz // 1000000, "MHz")
 
         for _name, btn in wake_btns:
             btn.deinit()   # expander pins belong to InputManager; leave them

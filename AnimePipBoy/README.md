@@ -38,13 +38,13 @@ This folder mirrors the CIRCUITPY drive root — copy it over a working MVP
 install (keeps everything not listed here):
 
 ```
-code.py                            auto-reload off (see below)
+code.py                            auto-reload off; USB-host 5 V held off
 config.txt                         per-device settings (rotation 270)
 config_reader.py, action.py        patched base files (see above)
 display_manager.py                 board backgrounds cached in RAM; no
                                    repaint when nothing changed; fast
                                    ST7735R init (BENCHMARK.md)
-sleep_manager.py                   20 ms wake poll
+sleep_manager.py                   20 ms wake poll; CPU at 24 MHz while asleep
 audio_player.py                    soft amp idle: outputs off after each
                                    sound instead of a codec reset
 machine.py                         wake: release gate instead of 1 s grace;
@@ -74,3 +74,26 @@ files therefore does nothing until you reset. Hard-reset the board
   the grid lines).
 - Audio: `python3 tools/make_animepipboy_sounds.py <drive root>` (gTTS +
   ffmpeg, re-encoded to 44.1 kHz mono 64 kbps MP3 to match the board).
+
+## Power and sleep (checked on the device 2026-10-25)
+
+Sleep is software idle: CircuitPython has no `alarm` module on the RP2350,
+so the CPU keeps running a wake-poll loop. It starts after `sleep_timeout`
+(120 s) of no input, and **only on battery**: sleep is suspended while USB is
+connected, unless `sleep_on_usb` is set.
+
+| Part | While asleep |
+|---|---|
+| Screen and its rail (D10) | **off**: rail cut, panel blanked |
+| Audio codec + amp | **off**: held in reset (PERIPH_RESET); it drops off I2C |
+| CPU | **24 MHz** instead of 150 (`sleep_cpu_mhz`), back to full speed on wake |
+| NeoPixels (5) | set to black |
+| USB-host 5 V switch | held **off** from boot (`code.py`); it used to float |
+| SD card | the talker does not use it (`sd_card: False`), but an inserted card stays powered. Remove it for battery runs |
+
+The clone has no ESP32-C6 fitted. Its board definition names the codec's
+reset pin both `ESP_RESET` and `PERIPH_RESET` (one pin), so never hold
+"ESP_RESET" low while awake: that silences the audio.
+
+Wake takes ~0.68 s to the picture with the 24 MHz sleep clock (0.62 s
+without it).

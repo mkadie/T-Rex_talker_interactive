@@ -11,6 +11,36 @@ import supervisor
 supervisor.runtime.autoreload = False
 
 
+def _quiet_unused_hardware():
+    """Switch off Fruit Jam parts the talker never uses (AnimePipBoy).
+
+    - USB-host 5 V switch: its enable line floats; drive it off.
+
+    The clone board has no ESP32-C6 fitted. Its board definition names the
+    audio codec's reset pin both ESP_RESET and PERIPH_RESET (one pin), so
+    do not hold "ESP_RESET" here -- that silences the codec. Sleep holds
+    that pin low on its own.
+
+    The pin must stay claimed, or it floats back, so it is returned and
+    kept for the life of the program.
+    """
+    import board
+    import digitalio
+    held = []
+    for name in ("USB_HOST_5V_POWER",):
+        try:
+            pin = digitalio.DigitalInOut(getattr(board, name))
+            pin.switch_to_output(value=False)
+            held.append(pin)
+            print("Power: {} held low".format(name))
+        except Exception as e:
+            print("Power: {} not held: {}".format(name, e))
+    return held
+
+
+_held_pins = _quiet_unused_hardware()
+
+
 def _warm_flash():
     try:
         import es8311

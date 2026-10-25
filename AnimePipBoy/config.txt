@@ -55,6 +55,10 @@ st7735_fast_init = true
 # the first word after a pause starts ~0.6 s sooner.
 amp_soft_idle = true
 
+# CPU clock while asleep, in MHz (normal is 150). Saves battery; restored
+# on wake. 24 is the lowest value checked on this board.
+sleep_cpu_mhz = 24
+
 # --- Hardware Variant ---
 # Which build this physical device is. Overrides DEFAULT_VARIANT in
 # hardware_config.py. Set this on any device that isn't the default:
